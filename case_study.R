@@ -74,7 +74,7 @@ T_2 <-T2 %>% mutate(
   Fehlerhaft = coalesce(Fehlerhaft.x,Fehlerhaft.y),
   Fehlerhaft_Datum = coalesce(Fehlerhaft_Datum.x,Fehlerhaft_Datum.y),
   Fehlerhaft_Fahrleistung = coalesce(Fehlerhaft_Fahrleistung.x,Fehlerhaft_Fahrleistung.y)
-  ) %>%
-  select(ID,Produktionsdatum,Herstellernummer,Werksnummer,Fehlerhaft==1,Fehlerhaft_Datum,Fehlerhaft_Fahrleistung)
+  ) 
+  #select(ID,Produktionsdatum,Herstellernummer,Werksnummer,Fehlerhaft==1,Fehlerhaft_Datum,Fehlerhaft_Fahrleistung)
 
 
