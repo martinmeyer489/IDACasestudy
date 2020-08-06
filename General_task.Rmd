@@ -1,0 +1,86 @@
+---
+title: "General tasks Group 65"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, results= 'hide')
+```
+
+### Summersemester 2020
+
+## 1.
+
+Import of the needed packages
+
+```{r, message=FALSE}
+if(!require("install.load")){
+  install.packages("install.load")
+}
+library('install.load')
+
+install_load("stringr", "data.table", "tidyverse","plotly")
+```
+
+
+### Preparation of the data for the exercise:
+1.Import of the datasets: Komponente_K7.csv, Logistics_delay_K7.csv
+
+```{r}
+Production <- fread(file="Data/Data/Logistikverzug/Komponente_K7.csv")
+
+Delivery <- fread(file="Data/Data/Logistikverzug/Logistics_delay_K7.csv")
+```
+2.Join both datasets by ID number
+
+```{r}
+Prod_Deli_join <- Production %>%
+  left_join(Delivery,by="IDNummer")
+```
+3. Add another colomn with difference between delivery and production date
+
+```{r}
+Logistics_delay <- Prod_Deli_join %>%
+  mutate(diff=difftime(Wareneingang, Produktionsdatum, units = "days"))
+```
+
+
+
+
+
+*How is the logistics delay distributed? Proof your selection by statistical tests and
+briefly describe your approach.*
+
+
+
+## 2.
+
+*Why does it make sense to store the available data in separate files instead of saving
+everything in a huge table? Name at least four benefits. The available tables represent a typical
+data base structure. How is it called?*
+
+## 3.
+
+*How many of the parts T4 ended up in vehicles registered in the city of Dortmund?*
+
+## 4.
+
+*Which data types do the attributes of the registration table "Zulassungen_aller_Fahrzeuge"
+have? Put your answers into a table which is integrated into your Markdown document*
+
+## 5.
+
+*You want to publish your application. Why does it make sense to store the data sets in a
+database on a server? Why is it not recommended to store the data sets on your personal
+computer? Name at least three points per question.*
+
+
+## 6.
+
+*On 11 August 2019 there was an accident involving a stolen car produced by your company.
+The driver left the scene without a trace. The license plate of the car, which caused the
+accident, was faked and the Vehicle Identification Number (VIN) was removed. Since you work
+for the Federal Motor Transport Authority, the police asks for your help to find out where the
+vehicle with the engine code "K1DI2-103-1031-21" (corresponds to the engine ID number) was
+registered.*
+
