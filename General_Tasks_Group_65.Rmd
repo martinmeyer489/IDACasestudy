@@ -26,25 +26,40 @@ install_load("stringr", "data.table", "tidyverse","plotly")
 ### Preparation of the data for the exercise:
 1.Import of the datasets: Komponente_K7.csv, Logistics_delay_K7.csv
 
-```{r}
+```{r, results='markup'}
 Production <- fread(file="Data/Data/Logistikverzug/Komponente_K7.csv")
+head(Production)
 
 Delivery <- fread(file="Data/Data/Logistikverzug/Logistics_delay_K7.csv")
+head(Delivery)
 ```
-2.Join both datasets by ID number
+
+2. Filter for relevant columns for the analysis
 
 ```{r}
-Prod_Deli_join <- Production %>%
-  left_join(Delivery,by="IDNummer")
+Production <- Production[,c("V1","IDNummer","Produktionsdatum")]
+
+Delivery <- Delivery[,c("V1","IDNummer","Wareneingang")]
 ```
+
+
+
+
+3.Join both datasets by ID number
+
+```{r,results='markup'}
+Prod_Deli_join <- Production %>%
+  full_join(Delivery,by="IDNummer")
+head(Prod_Deli_join)
+```
+
 3. Add another colomn with difference between delivery and production date
 
-```{r}
+```{r,results='markup'}
 Logistics_delay <- Prod_Deli_join %>%
   mutate(diff=difftime(Wareneingang, Produktionsdatum, units = "days"))
+head(Logistics_delay)
 ```
-
-
 
 
 
@@ -53,11 +68,35 @@ briefly describe your approach.*
 
 
 
+
+
+*What is the minimum/maximum time between delivering and receiving goods?*
+
+*Determine the mean of the logistics delay.*
+
+```{r, results='markup'}
+abcd <- Logistics_delay %>%
+  summarise(mean=mean(diff),max=max(diff),min=min(diff))
+head(abcd)
+```
+
+*Visualize the distribution in an appropriate way by displaying a histogram and the
+density function using the package plotly.*
+
+```{r, results='markup'}
+fig <- plot_ly(x=Logistics_delay$diff, type = "histogram", histnorm = "probability")
+fig
+```
+
 ## 2.
 
 *Why does it make sense to store the available data in separate files instead of saving
 everything in a huge table? Name at least four benefits. The available tables represent a typical
 data base structure. How is it called?*
+
+
+This data base structure is calles relational data base. The Benefits from this structure, compared to one huge table is that the Data is stored just once, which  eliminates data deduplication and therefor offers a higher accuray. Furthermore the flexibiltiy of higher, because Complex queries are easy for users to perform. another Benefit is that multiple users can access the same database.
+Trust: Relational database models are mature and well-understood.
 
 ## 3.
 
