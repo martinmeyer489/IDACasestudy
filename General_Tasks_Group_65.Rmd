@@ -27,19 +27,21 @@ install_load("stringr", "data.table", "tidyverse","plotly")
 1.Import of the datasets: Komponente_K7.csv, Logistics_delay_K7.csv
 
 ```{r, results='markup'}
-Production <- fread(file="Data/Data/Logistikverzug/Komponente_K7.csv")
-head(Production)
+Production_K7 <- fread(file="Data/Data/Logistikverzug/Komponente_K7.csv")
+head(Production_K7)
 
-Delivery <- fread(file="Data/Data/Logistikverzug/Logistics_delay_K7.csv")
-head(Delivery)
+Delivery_K7 <- fread(file="Data/Data/Logistikverzug/Logistics_delay_K7.csv")
+head(Delivery_K7)
 ```
 
 2. Filter for relevant columns for the analysis
 
 ```{r}
-Production <- Production[,c("V1","IDNummer","Produktionsdatum")]
+Production_K7 <-Production_K7[,c("IDNummer","Produktionsdatum")]
+head(Production_K7)
 
-Delivery <- Delivery[,c("V1","IDNummer","Wareneingang")]
+Delivery_K7 <-Delivery_K7[,c("IDNummer","Wareneingang")]
+head(Delivery_K7)
 ```
 
 
@@ -48,16 +50,20 @@ Delivery <- Delivery[,c("V1","IDNummer","Wareneingang")]
 3.Join both datasets by ID number
 
 ```{r,results='markup'}
-Prod_Deli_join <- Production %>%
-  full_join(Delivery,by="IDNummer")
+Prod_Deli_join <- Production_K7 %>%
+  left_join(Delivery_K7,by="IDNummer")
 head(Prod_Deli_join)
 ```
 
-3. Add another colomn with difference between delivery and production date
+4. Add another colomn with difference between delivery and production date
 
 ```{r,results='markup'}
+#calculate difference between delivery and produciton
+difference <- as.numeric(difftime(Prod_Deli_join$Wareneingang, Prod_Deli_join$Produktionsdatum, units = "days"))
+
+# add difference colomn to joined dataset 
 Logistics_delay <- Prod_Deli_join %>%
-  mutate(diff=difftime(Wareneingang, Produktionsdatum, units = "days"))
+  mutate(difference=difference)
 head(Logistics_delay)
 ```
 
@@ -75,16 +81,15 @@ briefly describe your approach.*
 *Determine the mean of the logistics delay.*
 
 ```{r, results='markup'}
-abcd <- Logistics_delay %>%
-  summarise(mean=mean(diff),max=max(diff),min=min(diff))
-head(abcd)
+#determine  mean, max and min of logistics delay
+print(summary(Logistics_delay$difference))
 ```
 
 *Visualize the distribution in an appropriate way by displaying a histogram and the
 density function using the package plotly.*
 
 ```{r, results='markup'}
-fig <- plot_ly(x=Logistics_delay$diff, type = "histogram", histnorm = "probability")
+fig <- plot_ly(x=Logistics_delay$difference, type = "histogram", histnorm = "probability")
 fig
 ```
 
@@ -96,6 +101,7 @@ data base structure. How is it called?*
 
 
 This data base structure is calles relational data base. The Benefits from this structure, compared to one huge table is that the Data is stored just once, which  eliminates data deduplication and therefor offers a higher accuray. Furthermore the flexibiltiy of higher, because Complex queries are easy for users to perform. another Benefit is that multiple users can access the same database.
+
 Trust: Relational database models are mature and well-understood.
 
 ## 3.
