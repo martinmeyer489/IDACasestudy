@@ -42,13 +42,13 @@ descdist(difference, discrete = FALSE)
 
 #fit different distrubtions to the data 
 fit_w  <- fitdist(difference, "weibull")
-plot(fit_w)
 fit_g  <- fitdist(difference, "gamma")
 fit_ln <- fitdist(difference, "lnorm")
 fit_n <- fitdist(difference, "norm")
+plot(fit_n)
 gofstat(list(fit_w, fit_g, fit_ln, fit_n))
 
-plotdist(difference, histo = TRUE, demp = TRUE, breaks=0:15)
+#plotdist(difference, histo = TRUE, demp = TRUE, breaks=0:15)
 
 
 #determine  mean, max and min of logistics delay
@@ -56,11 +56,11 @@ print(summary(Logistics_delay$difference))
 
 
 #plot hist and density function with normalization??
-fig <- plot_ly(x=difference, type = "histogram", histnorm = "probability")
-fig
+#fig <- plot_ly(x=difference, type = "histogram", histnorm = "probability")
+#fig
 
 
 #open T4 
-T04 <- fread(file="Data/Data/Einzelteil/Einzelteil_T04.csv")
-head(T04)
+#T04 <- fread(file="Data/Data/Einzelteil/Einzelteil_T04.csv")
+#head(T04)
 

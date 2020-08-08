@@ -9,7 +9,7 @@ knitr::opts_chunk$set(echo = TRUE, results= 'hide')
 
 ### Summersemester 2020
 
-## 1.
+### 1.
 
 Import of the needed packages
 
@@ -19,7 +19,7 @@ if(!require("install.load")){
 }
 library('install.load')
 
-install_load("stringr", "data.table", "tidyverse","plotly")
+install_load("stringr", "data.table", "tidyverse","plotly","fitdistrplus")
 ```
 
 
@@ -69,63 +69,52 @@ head(Logistics_delay)
 
 
 
-*How is the logistics delay distributed? Proof your selection by statistical tests and
-briefly describe your approach.*
+### 1.a)*How is the logistics delay distributed? Proof your selection by statistical tests and briefly describe your approach.*
 
+```{r,results='markup'}
+#gain overview with cullen and frey graph
+descdist(difference, discrete = FALSE)
 
+#fit different distrubtions to the data 
+fit_w  <- fitdist(difference, "weibull")
+fit_g  <- fitdist(difference, "gamma")
+fit_ln <- fitdist(difference, "lnorm")
+fit_n <- fitdist(difference, "norm")
+plot(fit_n)
+gofstat(list(fit_w, fit_g, fit_ln, fit_n))
+```
 
+### 1.b)*What is the minimum/maximum time between delivering and receiving goods?*
 
+### 1.c)*Determine the mean of the logistics delay.*
 
-*What is the minimum/maximum time between delivering and receiving goods?*
-
-*Determine the mean of the logistics delay.*
+We determine the mean and min and max of the logistics delay by using the function summary. In the Results we see that the mean is 10.08 days, the max is 18 days and the min is 7 days.
 
 ```{r, results='markup'}
 #determine  mean, max and min of logistics delay
 print(summary(Logistics_delay$difference))
 ```
 
-*Visualize the distribution in an appropriate way by displaying a histogram and the
-density function using the package plotly.*
+### 1.d)*Visualize the distribution in an appropriate way by displaying a histogram and the density function using the package plotly.*
 
 ```{r, results='markup'}
 fig <- plot_ly(x=Logistics_delay$difference, type = "histogram", histnorm = "probability")
 fig
 ```
 
-## 2.
-
-*Why does it make sense to store the available data in separate files instead of saving
-everything in a huge table? Name at least four benefits. The available tables represent a typical
-data base structure. How is it called?*
+### 2.*Why does it make sense to store the available data in separate files instead of saving everything in a huge table? Name at least four benefits. The available tables represent a typical data base structure. How is it called?*
 
 
 This data base structure is calles relational data base. The Benefits from this structure, compared to one huge table is that the Data is stored just once, which  eliminates data deduplication and therefor offers a higher accuray. Furthermore the flexibiltiy of higher, because Complex queries are easy for users to perform. another Benefit is that multiple users can access the same database.
 
 Trust: Relational database models are mature and well-understood.
 
-## 3.
+### 3.*How many of the parts T4 ended up in vehicles registered in the city of Dortmund?*
 
-*How many of the parts T4 ended up in vehicles registered in the city of Dortmund?*
+### 4.*Which data types do the attributes of the registration table "Zulassungen_aller_Fahrzeuge" have? Put your answers into a table which is integrated into your Markdown document*
 
-## 4.
-
-*Which data types do the attributes of the registration table "Zulassungen_aller_Fahrzeuge"
-have? Put your answers into a table which is integrated into your Markdown document*
-
-## 5.
-
-*You want to publish your application. Why does it make sense to store the data sets in a
-database on a server? Why is it not recommended to store the data sets on your personal
-computer? Name at least three points per question.*
+### 5.*You want to publish your application. Why does it make sense to store the data sets in a database on a server? Why is it not recommended to store the data sets on your personal computer? Name at least three points per question.*
 
 
-## 6.
-
-*On 11 August 2019 there was an accident involving a stolen car produced by your company.
-The driver left the scene without a trace. The license plate of the car, which caused the
-accident, was faked and the Vehicle Identification Number (VIN) was removed. Since you work
-for the Federal Motor Transport Authority, the police asks for your help to find out where the
-vehicle with the engine code "K1DI2-103-1031-21" (corresponds to the engine ID number) was
-registered.*
+### 6. *On 11 August 2019 there was an accident involving a stolen car produced by your company. The driver left the scene without a trace. The license plate of the car, which caused the accident, was faked and the Vehicle Identification Number (VIN) was removed. Since you work for the Federal Motor Transport Authority, the police asks for your help to find out where the vehicle with the engine code "K1DI2-103-1031-21" (corresponds to the engine ID number) was registered.*
 
