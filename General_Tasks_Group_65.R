@@ -37,6 +37,9 @@ Logistics_delay <- Prod_Deli_join %>%
   mutate(difference=difference)
 head(Logistics_delay)
 
+#plot emperical distrubtion
+plotdist(difference, histo = TRUE, demp = F)
+
 #gain overview with cullen and frey graph
 descdist(difference, discrete = FALSE)
 
@@ -44,11 +47,17 @@ descdist(difference, discrete = FALSE)
 fit_w  <- fitdist(difference, "weibull")
 fit_g  <- fitdist(difference, "gamma")
 fit_ln <- fitdist(difference, "lnorm")
-fit_n <- fitdist(difference, "norm")
-plot(fit_n)
-gofstat(list(fit_w, fit_g, fit_ln, fit_n))
 
-#plotdist(difference, histo = TRUE, demp = TRUE, breaks=0:15)
+
+#plot distrubtions
+par(mfrow = c(2, 2))
+plot.legend <- c("Weibull", "lognormal", "gamma")
+
+denscomp(list(fit_w, fit_ln, fit_g), legendtext = plot.legend)
+qqcomp(list(fit_w, fit_ln, fit_g), legendtext = plot.legend)
+cdfcomp(list(fit_w, fit_ln, fit_g), legendtext = plot.legend)
+ppcomp(list(fit_w, fit_ln, fit_g), legendtext = plot.legend)
+gofstat(list(fit_w, fit_g, fit_ln, fit_n))
 
 
 #determine  mean, max and min of logistics delay
@@ -61,6 +70,6 @@ print(summary(Logistics_delay$difference))
 
 
 #open T4 
-#T04 <- fread(file="Data/Data/Einzelteil/Einzelteil_T04.csv")
-#head(T04)
+T04 <- fread(file="Data/Data/Einzelteil/Einzelteil_T04.csv")
+head(T04)
 

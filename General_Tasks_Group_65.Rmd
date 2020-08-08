@@ -71,17 +71,52 @@ head(Logistics_delay)
 
 ### 1.a)*How is the logistics delay distributed? Proof your selection by statistical tests and briefly describe your approach.*
 
+To determine the distrubtion of the logistics delay it is necessary to fit one or more distributions to the data set and then evaluate the goodness of fit of these distributions.
+So first, to find good distrubtion candidates for the fitting to the data set it is a good idea to observe the emperical distrubtion with different plots. Therefore the plotdist() function from the package fitdistr is used, which provides two plots
+(see Figure 1): the left plot is the histogram on a density scale and the right-hand plot the empirical cumulative distribution function (CDF)
+
 ```{r,results='markup'}
+#
+plotdist(difference, histo = T, demp = F)
+
+```
+
+Another good indicator to choose the distrubtion candidates is the cullen and frey grap also called pearson graph by calling the function descdist from the packacge fitdistr. This graph gives a first impression wich distrubtions could fit the data of the logicitcs delay good. 
+In this plot it can be observed that lognormal, gamma and weibull seem to be good candidates because the blue observation point is near to their points or lines in the graph
+
+
+```{r,results='markup'}
+#discrete True or False
 #gain overview with cullen and frey graph
-descdist(difference, discrete = FALSE)
+descdist(difference, discrete = F)
+```
+
+Resulting from this selection of distrubtion candidates we fit the dataset to these three distrubtions by the fitdist() function. Addiontionly to gain a bigger knowledge we plot 
+```{r,results='markup'}
+
 
 #fit different distrubtions to the data 
 fit_w  <- fitdist(difference, "weibull")
 fit_g  <- fitdist(difference, "gamma")
 fit_ln <- fitdist(difference, "lnorm")
-fit_n <- fitdist(difference, "norm")
-plot(fit_n)
-gofstat(list(fit_w, fit_g, fit_ln, fit_n))
+
+
+#plot distrubtions
+par(mfrow = c(2, 2))
+plot.legend <- c("Weibull", "lognormal", "gamma")
+
+denscomp(list(fit_w, fit_ln, fit_g), legendtext = plot.legend)
+qqcomp(list(fit_w, fit_ln, fit_g), legendtext = plot.legend)
+cdfcomp(list(fit_w, fit_ln, fit_g), legendtext = plot.legend)
+ppcomp(list(fit_w, fit_ln, fit_g), legendtext = plot.legend)
+
+```
+
+
+added to our visual analysis we calcuate the goodness of fit by calling the function gofstat(), which provides us with ...
+```{r,results='markup'}
+#calcuate goodness of fit of the four distrubutions
+gofstat(list(fit_w, fit_g, fit_ln))
 ```
 
 ### 1.b)*What is the minimum/maximum time between delivering and receiving goods?*
@@ -113,8 +148,22 @@ Trust: Relational database models are mature and well-understood.
 
 ### 4.*Which data types do the attributes of the registration table "Zulassungen_aller_Fahrzeuge" have? Put your answers into a table which is integrated into your Markdown document*
 
+
+The data types of the attributes can be determined by calling the str() function. This shows that 
+1. V1 is integer
+2. IDNummer is character
+3. Gemeinde is character
+4. Zulassung is character
+
+```{r, results='markup'}
+registration <- fread(file="Data/Data/Zulassungen/Zulassungen_alle_Fahrzeuge.csv",header=TRUE)
+print(str(registration))
+```
+
+
 ### 5.*You want to publish your application. Why does it make sense to store the data sets in a database on a server? Why is it not recommended to store the data sets on your personal computer? Name at least three points per question.*
 
+It makes sense to store the data sets, which are used for the application, in a database on a server, because this makes it possible for other users to access the data sets and thus use the application properly.
 
 ### 6. *On 11 August 2019 there was an accident involving a stolen car produced by your company. The driver left the scene without a trace. The license plate of the car, which caused the accident, was faked and the Vehicle Identification Number (VIN) was removed. Since you work for the Federal Motor Transport Authority, the police asks for your help to find out where the vehicle with the engine code "K1DI2-103-1031-21" (corresponds to the engine ID number) was registered.*
 
