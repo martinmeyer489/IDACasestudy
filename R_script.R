@@ -38,13 +38,18 @@ t02 <- t02 %>%
   unite("Fehlerhaft_Datum",Fehlerhaft_Datum.x,Fehlerhaft_Datum.y, na.rm = TRUE) %>%
   unite("Fehlerhaft_Fahrleistung",Fehlerhaft_Fahrleistung.x,Fehlerhaft_Fahrleistung.y, na.rm = TRUE)
 
-#change formats:
-t02$Produktionsdatum <- as.Date(t02$Produktionsdatum)
-t02$Herstellernummer <- as.factor(t02$Herstellernummer)
-t02$Werksnummer <- as.factor(t02$Werksnummer)
-t02$Fehlerhaft <- as.integer(t02$Fehlerhaft)
-t02$Fehlerhaft_Datum <- as.Date(t02$Fehlerhaft_Datum)
-t02$Fehlerhaft_Fahrleistung <- as.numeric(t02$Fehlerhaft_Fahrleistung)
+#change formats (function becuase we need to do the same later:
+set_formats <- function(x){
+  x %>% mutate(
+    Produktionsdatum = as.Date(Produktionsdatum),
+    Herstellernummer = as.factor(Herstellernummer),
+    Werksnummer = as.factor(Werksnummer),
+    Fehlerhaft = as.factor(Fehlerhaft),
+    Fehlerhaft_Datum = as.Date(Fehlerhaft_Datum),
+    Fehlerhaft_Fahrleistung = as.numeric(Fehlerhaft_Fahrleistung)
+  )
+}
+t02 <- set_formats(t02)
 
 #create ID_number that contains the last part of the IDs as integer:
 t02 <- mutate(t02,ID_number = as.integer(gsub("^.*-", "", ID_T02)))
@@ -79,3 +84,43 @@ k1di1 <- k1di1 %>%
 k1be1 <- k1be1 %>% rename(Produktionsdatum=origin,Origin=Produktionsdatum_Origin_01011970)
 k1be2 <- k1be2 %>% rename(Produktionsdatum=origin,Origin=Produktionsdatum_Origin_01011970)
 k1di2 <- k1di2 %>% rename(Produktionsdatum=origin,Origin=Produktionsdatum_Origin_01011970)
+
+k1be1 <- set_formats(k1be1)
+k1be2 <- set_formats(k1be2)
+k1di1 <- set_formats(k1di1)
+k1di2 <- set_formats(k1di2)
+#did not work for k1di1 because of empty strings in Fehlerhaft_Datum. Therefore replace them with NAs:
+k1di1 <- k1di1 %>%
+  mutate(Fehlerhaft_Datum = if_else(Fehlerhaft_Datum == "",NA_character_ ,Fehlerhaft_Datum))
+
+k1di1 <- set_formats(k1di1)
+
+#remove unnecessary columns (parts that are not T2)
+bestand_k1be1[c(1,3:4)] <- list(NULL)
+bestand_k1be2[c(1,3:4)] <- list(NULL)
+bestand_k1di1[c(1,3:4)] <- list(NULL)
+bestand_k1di2[c(1,3:4)] <- list(NULL)
+
+#join defected parts with components:
+t02_defected_components <- t02_defected %>%
+  select(ID_T02) %>%
+  left_join(bestand_k1be1,by=c("ID_T02" = "ID_T2")) %>%
+  left_join(bestand_k1be2,by=c("ID_T02" = "ID_T2")) %>%
+  left_join(bestand_k1di1,by=c("ID_T02" = "ID_T2")) %>%
+  left_join(bestand_k1di2,by=c("ID_T02" = "ID_T2"))
+
+t02_defected_components <- t02_defected_components %>%
+  unite("ID_Component", ID_K1BE1, ID_K1BE2, ID_K1DI1, ID_K1DI2, na.rm = TRUE)
+
+bestand_fzg_oem1_typ11[c(1:3)] <- list(NULL)
+bestand_fzg_oem1_typ12[c(1:3)] <- list(NULL)
+
+t02_defected_vehicles <- t02_defected_components %>%
+  left_join(bestand_fzg_oem1_typ11,by=c("ID_Component" = "ID_Motor")) %>%
+  left_join(bestand_fzg_oem1_typ12,by=c("ID_Component" = "ID_Motor"))
+
+t02_defected_vehicles <- t02_defected_vehicles %>%
+  unite("ID_Vehicle", ID_Fahrzeug.x, ID_Fahrzeug.y, na.rm = TRUE)
+  
+#I think for tidy data we must check earlier that Herstellernummer and first three digits of Werksnummer are equal. Or is that only for parts, not components?
+#also we dont need most of the columns! Maybe unnecessary to put them in the right format.
