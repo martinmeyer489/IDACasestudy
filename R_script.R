@@ -55,3 +55,27 @@ t02 <- mutate(t02,ID_number = as.integer(gsub("^.*-", "", ID_T02)))
 t02_defected <- t02 %>%
   filter((Herstellernummer == 202 & Werksnummer == 2022 & Produktionsdatum >= "2009-04-30" & Produktionsdatum <= "2014-11-30") | (Herstellernummer == 201 & Werksnummer == 2011 & ID_number >= 1250 & ID_number <= 19500))
 
+#In the next step we want to integrate the component data. Therefore we need to tidy it before.
+#Data set k1di1 has the same columns for x, y and without an index. The following filters show that each object has only a value in one of the three ID columns.
+k1di1 %>%
+  filter(is.na(ID_Motor.x) & is.na(ID_Motor.y) & is.na(ID_Motor))
+k1di1 %>%
+  filter(!is.na(ID_Motor.x) & !is.na(ID_Motor.y))
+k1di1 %>%
+  filter(!is.na(ID_Motor.x) & !is.na(ID_Motor))
+k1di1 %>%
+  filter(!is.na(ID_Motor) & !is.na(ID_Motor.y))
+
+#k1di1 three columns can be united to one:
+k1di1 <- k1di1 %>%
+  unite("ID_Motor",ID_Motor,ID_Motor.x,ID_Motor.y, na.rm = TRUE) %>%
+  unite("Produktionsdatum",Produktionsdatum,Produktionsdatum.x,Produktionsdatum.y, na.rm = TRUE) %>%
+  unite("Herstellernummer",Herstellernummer,Herstellernummer.x,Herstellernummer.y, na.rm = TRUE) %>%
+  unite("Werksnummer",Werksnummer,Werksnummer.x,Werksnummer.y, na.rm = TRUE) %>%
+  unite("Fehlerhaft",Fehlerhaft,Fehlerhaft.x,Fehlerhaft.y, na.rm = TRUE) %>%
+  unite("Fehlerhaft_Datum",Fehlerhaft_Datum,Fehlerhaft_Datum.x,Fehlerhaft_Datum.y, na.rm = TRUE) %>%
+  unite("Fehlerhaft_Fahrleistung",Fehlerhaft_Fahrleistung,Fehlerhaft_Fahrleistung.x,Fehlerhaft_Fahrleistung.y, na.rm = TRUE)
+
+k1be1 <- k1be1 %>% rename(Produktionsdatum=origin,Origin=Produktionsdatum_Origin_01011970)
+k1be2 <- k1be2 %>% rename(Produktionsdatum=origin,Origin=Produktionsdatum_Origin_01011970)
+k1di2 <- k1di2 %>% rename(Produktionsdatum=origin,Origin=Produktionsdatum_Origin_01011970)
