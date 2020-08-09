@@ -1,0 +1,154 @@
+---
+title: "CaseStudy"
+runtime: shiny
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, results= 'hide')
+```
+
+### Summersemester 2020
+
+```{r, message=FALSE}
+library(dplyr)
+library(tidyverse)
+```
+
+### 1. Data import
+
+The first step is to identify the relevant data sets and to import them into R. This case study is about the control units T2. Therefore, the parts list "Einzelteil_T02" is imported. It contains one or multiple whitespaces as seperatorsand tabs as delimiter between rows. Therefore, read.table is used because it takes one or more whitespaces as sperator. The tabs are replaced with line breaks by the function gsub which is performed on the original data set imported as text by the function readLines.
+
+```{r,results='markup'}
+t02 <- read.table(text = gsub("\t", "\n", readLines('./Data/Einzelteil/Einzelteil_T02.txt')))
+```
+
+In the next step, the relevant component data is imported. The parts "T2" are built into motors. Thus, the motor components K1BE1, K1BE2, K1DI1, and K1DI2 are the only components which include "T2" parts. The csv files can be imported with the function read.csv and read.csv, depending on whether the seperator is a comma or a semicolon. Data set K1DI1 must be imported the same way as T02 because it has a similar structure. *Maybe not import K1BE2 and K1DI2 because they are not part in vehicles from manufacturer OEM1. Maybe only import bestand, depends on whether the "Fehlerhaft" is important later.*
+
+```{r,results='markup'}
+bestand_k1be1 <- read.csv2(row.names = 1, './Data/Komponente/Bestandteile_Komponente_K1BE1.csv')
+bestand_k1be2 <- read.csv2(row.names = 1, './Data/Komponente/Bestandteile_Komponente_K1BE2.csv')
+bestand_k1di1 <- read.csv2(row.names = 1, './Data/Komponente/Bestandteile_Komponente_K1DI1.csv')
+bestand_k1di2 <- read.csv2(row.names = 1, './Data/Komponente/Bestandteile_Komponente_K1DI2.csv')
+k1be1 <- read.csv(row.names = 1, './Data/Komponente/Komponente_K1BE1.csv')
+k1be2 <- read.csv2(row.names = 1, './Data/Komponente/Komponente_K1BE2.csv')
+k1di1 <- read.csv(row.names = 1, './Data/Komponente/Komponente_K1DI1.csv')
+k1di2 <- read.table(sep = "\\", text = gsub("\t", "\n", readLines('./Data/Komponente/Komponente_K1DI2.txt')))
+```
+
+Additionally, the relevant vehicle data must be imported. Only the vehicles of type 11 and type 12 are relevant for this case study. They are also CSV-files seperated by comma (read.csv) or semicolon (Read.csv2).
+
+```{r,results='markup'}
+bestand_fzg_oem1_typ11 <- read.csv2(row.names = 1, './Data/Fahrzeug/Bestandteile_Fahrzeuge_OEM1_Typ11.csv')
+bestand_fzg_oem1_typ12 <- read.csv2(row.names = 1, './Data/Fahrzeug/Bestandteile_Fahrzeuge_OEM1_Typ12.csv')
+fzg_oem1_typ11 <- read.csv(row.names = 1, './Data/Fahrzeug/Fahrzeuge_OEM1_Typ11.csv')
+fzg_oem1_typ12 <- read.csv2(row.names = 1, './Data/Fahrzeug/Fahrzeuge_OEM1_Typ12.csv')
+```
+
+The last necessary data set is the one that contains information about the registration of the vehicles. The data is a CSV-file seperated by semicolons.
+
+```{r,results='markup'}
+zulassungen <- read.csv2(row.names = 1, './Data/Zulassungen/Zulassungen_alle_Fahrzeuge.csv')
+```
+
+### 1. Data preperation
+
+The next step is to prepare the data. Therefore, the data has to be formatted in accordance to the principles of tidy data.
+
+The data frame "t02" contains each colum (except for the row names *maybe add row_names = 1 to t02 import*) twice. Once with suffic x and once with suffix y. The following filter shows that no row contains an ID in both parts:
+
+```{r,results='markup'}
+t02 %>%
+  filter(is.na(ID_T02.x) & is.na(ID_T02.y))
+```
+
+Thus, we can unite each two columns without losing relevant information. The suffix x and y determines which Hersteller built the part but this information is stored in the Herstellernummer and not lost by the merge of the columns. The NAs can be removed.
+
+```{r,results='markup'}
+t02 <- t02 %>%
+  unite("ID_T02",ID_T02.x,ID_T02.y, na.rm = TRUE) %>%
+  unite("Produktionsdatum",Produktionsdatum.x,Produktionsdatum.y, na.rm = TRUE) %>%
+  unite("Herstellernummer",Herstellernummer.x,Herstellernummer.y, na.rm = TRUE) %>%
+  unite("Werksnummer",Werksnummer.x,Werksnummer.y, na.rm = TRUE) %>%
+  unite("Fehlerhaft",Fehlerhaft.x,Fehlerhaft.y, na.rm = TRUE) %>%
+  unite("Fehlerhaft_Datum",Fehlerhaft_Datum.x,Fehlerhaft_Datum.y, na.rm = TRUE) %>%
+  unite("Fehlerhaft_Fahrleistung",Fehlerhaft_Fahrleistung.x,Fehlerhaft_Fahrleistung.y, na.rm = TRUE)
+```
+
+After this, all variables are classfied as characters. In the next step we change them into the formats that fit to the data. This step has to be done on other data again, so a function was created to automate this process.
+
+```{r,results='markup'}
+set_formats <- function(x){
+  x %>% mutate(
+    Produktionsdatum = as.Date(Produktionsdatum),
+    Herstellernummer = as.factor(Herstellernummer),
+    Werksnummer = as.factor(Werksnummer),
+    Fehlerhaft = as.factor(Fehlerhaft),
+    Fehlerhaft_Datum = as.Date(Fehlerhaft_Datum),
+    Fehlerhaft_Fahrleistung = as.numeric(Fehlerhaft_Fahrleistung)
+  )
+}
+```
+
+The function is applied to "t02".
+
+```{r,results='markup'}
+t02 <- set_formats(t02)
+```
+
+The dataset "t02" will later be filtered to find the affected parts. Therefore, the last part of its IDs must be copied into a new variable. It is called "ID_number".
+
+```{r,results='markup'}
+t02 <- mutate(t02,ID_number = as.integer(gsub("^.*-", "", ID_T02)))
+```
+
+
+
+
+This R Markdown document is made interactive using Shiny. Unlike the more traditional workflow of creating static reports, you can now create documents that allow your readers to change the assumptions underlying your analysis and see the results immediately. 
+
+To learn more, see [Interactive Documents](http://rmarkdown.rstudio.com/authoring_shiny.html).
+
+## Inputs and Outputs
+
+You can embed Shiny inputs and outputs in your document. Outputs are automatically updated whenever inputs change.  This demonstrates how a standard R plot can be made interactive by wrapping it in the Shiny `renderPlot` function. The `selectInput` and `sliderInput` functions create the input widgets used to drive the plot.
+
+```{r eruptions, echo=FALSE}
+inputPanel(
+  selectInput("n_breaks", label = "Number of bins:",
+              choices = c(10, 20, 35, 50), selected = 20),
+  
+  sliderInput("bw_adjust", label = "Bandwidth adjustment:",
+              min = 0.2, max = 2, value = 1, step = 0.2)
+)
+
+renderPlot({
+  hist(faithful$eruptions, probability = TRUE, breaks = as.numeric(input$n_breaks),
+       xlab = "Duration (minutes)", main = "Geyser eruption duration")
+  
+  dens <- density(faithful$eruptions, adjust = input$bw_adjust)
+  lines(dens, col = "blue")
+})
+```
+
+## Embedded Application
+
+It's also possible to embed an entire Shiny application within an R Markdown document using the `shinyAppDir` function. This example embeds a Shiny application located in another directory:
+
+```{r tabsets, echo=FALSE}
+shinyAppDir(
+  system.file("examples/06_tabsets", package = "shiny"),
+  options = list(
+    width = "100%", height = 550
+  )
+)
+```
+
+Note the use of the `height` parameter to determine how much vertical space the embedded application should occupy.
+
+You can also use the `shinyApp` function to define an application inline rather then in an external directory.
+
+In all of R code chunks above the `echo = FALSE` attribute is used. This is to prevent the R code within the chunk from rendering in the document alongside the Shiny components.
+
+
+
