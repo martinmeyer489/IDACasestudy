@@ -146,6 +146,17 @@ Trust: Relational database models are mature and well-understood.
 
 ### 3.*How many of the parts T4 ended up in vehicles registered in the city of Dortmund?*
 
+To determine the parts we first read 
+```{r, results='markup'}
+#read in files
+T04 <- fread(file="Data/Data/Einzelteil/Einzelteil_T04.csv")
+registration <-fread(file="Data/Data/Zulassungen/Zulassungen_alle_Fahrzeuge.csv",header=TRUE)
+head(T04)
+head(registration)
+
+```
+
+
 ### 4.*Which data types do the attributes of the registration table "Zulassungen_aller_Fahrzeuge" have? Put your answers into a table which is integrated into your Markdown document*
 
 
@@ -156,7 +167,7 @@ The data types of the attributes can be determined by calling the str() function
 4. Zulassung is character
 
 ```{r, results='markup'}
-registration <- fread(file="Data/Data/Zulassungen/Zulassungen_alle_Fahrzeuge.csv",header=TRUE)
+
 print(str(registration))
 ```
 

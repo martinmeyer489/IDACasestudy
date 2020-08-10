@@ -3,7 +3,8 @@ if(!require("install.load")){
 }
 library('install.load')
 
-install_load("stringr", "data.table", "tidyverse","plotly", "fitdistrplus")
+install_load("stringr", "data.table", "tidyverse","plotly", "fitdistrplus", "tidyr")
+
 
 #fread erlaubt??
 Production_K7 <- fread(file="Data/Data/Logistikverzug/Komponente_K7.csv")
@@ -70,6 +71,24 @@ print(summary(Logistics_delay$difference))
 
 
 #open T4 
-T04 <- fread(file="Data/Data/Einzelteil/Einzelteil_T04.csv")
-head(T04)
+fahrzeug_komponente <- list.files("Data/Data/Fahrzeug", full.names = T, pattern = "Bestandteile")
+komponente_teil <- list.files("Data/Data/Komponente", full.names = T, pattern = "Bestandteile")
 
+
+
+
+
+
+
+k5 <- fread(file = "Data/Data/Komponente/Bestandteile_Komponente_K1BE1.csv", header = T)
+
+registration <-fread(file="Data/Data/Zulassungen/Zulassungen_alle_Fahrzeuge.csv",header=TRUE)
+
+
+
+
+k6 <- k5 %>%
+  dplyr::select(-V1) %>%
+  gather(key = "Teile",value = "Teile_ID",-ID_K1BE1) 
+  #filter(str_detect(Teile_ID, "T4")) %>%
+  #dplyr::select(-Teile) 
