@@ -102,53 +102,165 @@ The dataset "t02" will later be filtered to find the affected parts. Therefore, 
 t02 <- mutate(t02,ID_number = as.integer(gsub("^.*-", "", ID_T02)))
 ```
 
+The component data must be put in a tidy format as well. Data set K1DI1 has the same columns for x, y and without an index. The following filters show that each object has only a value in one of the three ID columns.
 
-
-
-This R Markdown document is made interactive using Shiny. Unlike the more traditional workflow of creating static reports, you can now create documents that allow your readers to change the assumptions underlying your analysis and see the results immediately. 
-
-To learn more, see [Interactive Documents](http://rmarkdown.rstudio.com/authoring_shiny.html).
-
-## Inputs and Outputs
-
-You can embed Shiny inputs and outputs in your document. Outputs are automatically updated whenever inputs change.  This demonstrates how a standard R plot can be made interactive by wrapping it in the Shiny `renderPlot` function. The `selectInput` and `sliderInput` functions create the input widgets used to drive the plot.
-
-```{r eruptions, echo=FALSE}
-inputPanel(
-  selectInput("n_breaks", label = "Number of bins:",
-              choices = c(10, 20, 35, 50), selected = 20),
-  
-  sliderInput("bw_adjust", label = "Bandwidth adjustment:",
-              min = 0.2, max = 2, value = 1, step = 0.2)
-)
-
-renderPlot({
-  hist(faithful$eruptions, probability = TRUE, breaks = as.numeric(input$n_breaks),
-       xlab = "Duration (minutes)", main = "Geyser eruption duration")
-  
-  dens <- density(faithful$eruptions, adjust = input$bw_adjust)
-  lines(dens, col = "blue")
-})
+```{r,results='markup'}
+k1di1 %>%
+  filter(is.na(ID_Motor.x) & is.na(ID_Motor.y) & is.na(ID_Motor))
+k1di1 %>%
+  filter(!is.na(ID_Motor.x) & !is.na(ID_Motor.y))
+k1di1 %>%
+  filter(!is.na(ID_Motor.x) & !is.na(ID_Motor))
+k1di1 %>%
+  filter(!is.na(ID_Motor) & !is.na(ID_Motor.y))
 ```
 
-## Embedded Application
+Therefore, the three columns of each kind can be united as one, and the NA values can be removed:
 
-It's also possible to embed an entire Shiny application within an R Markdown document using the `shinyAppDir` function. This example embeds a Shiny application located in another directory:
-
-```{r tabsets, echo=FALSE}
-shinyAppDir(
-  system.file("examples/06_tabsets", package = "shiny"),
-  options = list(
-    width = "100%", height = 550
-  )
-)
+```{r,results='markup'}
+k1di1 <- k1di1 %>%
+  unite("ID_Motor",ID_Motor,ID_Motor.x,ID_Motor.y, na.rm = TRUE) %>%
+  unite("Produktionsdatum",Produktionsdatum,Produktionsdatum.x,Produktionsdatum.y, na.rm = TRUE) %>%
+  unite("Herstellernummer",Herstellernummer,Herstellernummer.x,Herstellernummer.y, na.rm = TRUE) %>%
+  unite("Werksnummer",Werksnummer,Werksnummer.x,Werksnummer.y, na.rm = TRUE) %>%
+  unite("Fehlerhaft",Fehlerhaft,Fehlerhaft.x,Fehlerhaft.y, na.rm = TRUE) %>%
+  unite("Fehlerhaft_Datum",Fehlerhaft_Datum,Fehlerhaft_Datum.x,Fehlerhaft_Datum.y, na.rm = TRUE) %>%
+  unite("Fehlerhaft_Fahrleistung",Fehlerhaft_Fahrleistung,Fehlerhaft_Fahrleistung.x,Fehlerhaft_Fahrleistung.y, na.rm = TRUE)
 ```
 
-Note the use of the `height` parameter to determine how much vertical space the embedded application should occupy.
+The datasets K1BE1, K1BE2, and K1DI2 contain the columns "Produktionsdatum_Origin_01011970" and "origin" but they seem to be mixed up. In the following step this is corrected (*Produktionsdatum has still some mistakes in it (i.e. 0001 instead of 2001) but we dont need it anyway I think*)
 
-You can also use the `shinyApp` function to define an application inline rather then in an external directory.
+```{r,results='markup'}
+k1be1 <- k1be1 %>% rename(Produktionsdatum=origin,Origin=Produktionsdatum_Origin_01011970)
+k1be2 <- k1be2 %>% rename(Produktionsdatum=origin,Origin=Produktionsdatum_Origin_01011970)
+k1di2 <- k1di2 %>% rename(Produktionsdatum=origin,Origin=Produktionsdatum_Origin_01011970)
+```
 
-In all of R code chunks above the `echo = FALSE` attribute is used. This is to prevent the R code within the chunk from rendering in the document alongside the Shiny components.
+All four data sets of components have their variables as characters now. This is changed with the function set_formats.
+
+```{r,results='markup'}
+k1be1 <- set_formats(k1be1)
+k1be2 <- set_formats(k1be2)
+k1di1 <- set_formats(k1di1)
+k1di2 <- set_formats(k1di2)
+```
+
+Unfortuantely, this did not work for data set K1DI1 because it contains empty strings in "Fehlerhaft_Datum". Therefore, these empty strings are replaced by NAs. Afterwards, the function set_formats can be applied correctly.
+
+```{r,results='markup'}
+k1di1 <- k1di1 %>%
+  mutate(Fehlerhaft_Datum = if_else(Fehlerhaft_Datum == "",NA_character_ ,Fehlerhaft_Datum))
+
+k1di1 <- set_formats(k1di1)
+```
+
+For the data frames that contain the stock (bestand) of the components, only column 2, and 5 are relevant because the other columns contain IDs of parts which are not T2. They are removed.
+
+```{r,results='markup'}
+bestand_k1be1[c(1,3:4)] <- list(NULL)
+bestand_k1be2[c(1,3:4)] <- list(NULL)
+bestand_k1di1[c(1,3:4)] <- list(NULL)
+bestand_k1di2[c(1,3:4)] <- list(NULL)
+```
 
 
+The same can be done for all columns in the stock (bestand) of the vehicles which do not contain the vehicle ID or the motor ID, because all affected components are motors.
 
+```{r,results='markup'}
+bestand_fzg_oem1_typ11[c(1:3)] <- list(NULL)
+bestand_fzg_oem1_typ12[c(1:3)] <- list(NULL)
+```
+
+The next data frame which needs to be tidied up is "zulassungen". It contains a column "Zulassungen" which states the date of the registration of the vehicle. This variable miust be put into a Date format.
+
+```{r,results='markup'}
+zulassungen <- zulassungen %>%
+  mutate(Zulassung = as.Date(Zulassung))
+```
+
+### 3. Creation of final detaset
+
+In the third part, the final datset is created. First of all, we need to filter the data of "to2" to get a dat frame that only contains the affected parts. These parts are either produced by control unit manufacturer "202" in plant "2022" in the period from 31.04.2009 to 31.11.2014 or produced by control unit manufacturere 201 with the production numbers "2-201-2011-1250" to "2-201-2011-19500.
+
+```{r,results='markup'}
+t02_affected <- t02 %>%
+  filter((Herstellernummer == 202 & Werksnummer == 2022 & Produktionsdatum >= "2009-04-30" & Produktionsdatum <= "2014-11-30") | (Herstellernummer == 201 & Werksnummer == 2011 & ID_number >= 1250 & ID_number <= 19500))
+```
+
+In the next step, the list of affected parts is joined with the list of components to assign each affected part to the component in which it is used. Therefore, we only need the ID of the affected parts. These IDs are joined by left_join to all four component sets. (*Maybe keep "Fehlerhaft" information in it too because we will need it in the final dataset as well, I think. Maybe we should then also add suffix to Fehlerhaft (join parameter) to be able to distuingishg between the fehlerhaft information for part, component, and vehicle!)*)
+
+```{r,results='markup'}
+t02_affected_components <- t02_affected %>%
+  select(ID_T02) %>%
+  left_join(bestand_k1be1,by=c("ID_T02" = "ID_T2")) %>%
+  left_join(bestand_k1be2,by=c("ID_T02" = "ID_T2")) %>%
+  left_join(bestand_k1di1,by=c("ID_T02" = "ID_T2")) %>%
+  left_join(bestand_k1di2,by=c("ID_T02" = "ID_T2"))
+```
+
+The result is a data frame in which each part is assigned to one component, but the component IDs are in four different columns. These columns can be united and NA-values can be removed.
+
+```{r,results='markup'}
+t02_affected_components <- t02_affected_components %>%
+  unite("ID_Component", ID_K1BE1, ID_K1BE2, ID_K1DI1, ID_K1DI2, na.rm = TRUE)
+```
+
+In the next step, the affected vehicles must be identified. Therefore, the component IDs are joined with the vehicle IDs by using the function left_join.
+
+```{r,results='markup'}
+t02_affected_vehicles <- t02_affected_components %>%
+  left_join(bestand_fzg_oem1_typ11,by=c("ID_Component" = "ID_Motor")) %>%
+  left_join(bestand_fzg_oem1_typ12,by=c("ID_Component" = "ID_Motor"))
+```
+
+Afterwards,the two variables of vehcile IDs can be united and the NA-values can be removed, because no row contains information in both ID columns.
+
+```{r,results='markup'}
+t02_affected_vehicles <- t02_affected_vehicles %>%
+  unite("ID_Vehicle", ID_Fahrzeug.x, ID_Fahrzeug.y, na.rm = TRUE)
+```
+
+The IDs formats are changed into factors to check whether each part is assigned to one component and each component to one vehicle.
+
+```{r,results='markup'}
+t02_affected_vehicles <- t02_affected_vehicles %>%
+  mutate(ID_T02 = as.factor(ID_T02)) %>%
+  mutate(ID_Component = as.factor(ID_Component)) %>%
+  mutate(ID_Vehicle = as.factor(ID_Vehicle))
+```
+
+Now, the summary of "to2_affected_vehicles" displays this information. It can be seen that all parts were assigned to one component but not all components were assigned to a vehicle.
+
+```{r,results='markup'}
+summary(t02_affected_vehicles)
+```
+
+The following filter shows the reason. Only the components from dataframes K1BE1 and K1DI1 were used in vehiclesfrom manufacturer OEM1 (*still keep information about parts that were used in K1BE2 and K1DI2 in data frame? They do not concern our manufacturer but they were affetced by T2*).
+
+```{r,results='markup'}
+t02_affected_vehicles %>%
+  filter(str_detect(ID_Component, "K1BE1|K1DI1")) %>%
+  summary()
+```
+
+The empty strings in the vehicle IDs can be replaced by NAs and transformed into factors, similar to the other IDs.
+
+```{r,results='markup'}
+t02_affected_vehicles <- t02_affected_vehicles %>%
+  mutate(ID_Vehicle = if_else(ID_Vehicle == "",NA_character_ ,ID_Vehicle)) %>%
+  mutate(ID_Vehicle = as.factor(ID_Vehicle))
+```
+
+Now, the registration data of the vehicles is added by a left_join.
+
+```{r,results='markup'}
+t02_affected_vehicles <- t02_affected_vehicles %>%
+  left_join(zulassungen, by = c("ID_Vehicle" = "IDNummer"))
+```
+
+The following filter shows that each affected vehicle was assigned to a registration.
+
+```{r,results='markup'}
+t02_affected_zulassungen %>%
+  filter(!is.na(ID_Vehicle) & is.na(Gemeinden))
+```
