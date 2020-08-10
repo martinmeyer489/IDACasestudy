@@ -12,7 +12,7 @@ head(Production_K7)
 
 Delivery_K7 <- fread(file="Data/Data/Logistikverzug/Logistics_delay_K7.csv")
 head(Delivery_K7)
-#Q: herstellnummer 113 aber in ID 112 ??
+
 
 
 #Filter for relevant columns for the analysis
@@ -70,25 +70,58 @@ print(summary(Logistics_delay$difference))
 #fig
 
 
-#open T4 
+#task 3
 fahrzeug_komponente <- list.files("Data/Data/Fahrzeug", full.names = T, pattern = "Bestandteile")
 komponente_teil <- list.files("Data/Data/Komponente", full.names = T, pattern = "Bestandteile")
 
 
+task_3_2 <- function(x){
+  df <- fread(file = x, header = T) #%>%
+  if (any(str_detect(colnames(df),"T4$")==TRUE)){
+    df %>%
+      dplyr::select(ID_T4, contains("K")) # contains k 
+  }
+}
+
+b <- bind_rows(lapply(komponente_teil,task_3_2))
+  
+OEM1_11 <- fread(file = "Data/Data/Fahrzeug/Bestandteile_Fahrzeuge_OEM1_Typ11.csv",header= T) %>%
+    as_tibble() %>%
+    filter(str_detect(ID_Motor,"^K1BE1")) %>%
+    dplyr::select(ID_Motor,ID_Fahrzeug)
+
+OEM1_12 <- fread(file = "Data/Data/Fahrzeug/Bestandteile_Fahrzeuge_OEM1_Typ12.csv",header= T) %>%
+  as_tibble() %>%
+  filter(str_detect(ID_Motor,"^K1BE1")) %>%
+  dplyr::select(ID_Motor,ID_Fahrzeug)
+
+vehicles <- bind_rows(OEM1_11,OEM1_12)  
+
+registration <-fread(file="Data/Data/Zulassungen/Zulassungen_alle_Fahrzeuge.csv",header = T) %>%
+    as_tibble() %>%
+    mutate(Zulassung = as.Date(Zulassung))
+
+head(registration)
+
+vehicles_dortmund <- registration %>%
+  filter(str_detect(Gemeinden,"DORTMUND")) %>%
+  semi_join(vehicles, by=c("IDNummer"="ID_Fahrzeug"))
+    
+nrow(vehicles_dortmund)
 
 
 
 
+#task 6
 
-k5 <- fread(file = "Data/Data/Komponente/Bestandteile_Komponente_K1BE1.csv", header = T)
+OEM2_21 <- fread(file = "Data/Data/Fahrzeug/Bestandteile_Fahrzeuge_OEM2_Typ21.csv",header= T) %>%
+  as_tibble()
 
-registration <-fread(file="Data/Data/Zulassungen/Zulassungen_alle_Fahrzeuge.csv",header=TRUE)
+OEM2_22 <- fread(file = "Data/Data/Fahrzeug/Bestandteile_Fahrzeuge_OEM2_Typ22.csv",header= T) %>%
+  as_tibble()
 
+total_vehicles <- bind_rows(OEM2_21,OEM2_22)
 
-
-
-k6 <- k5 %>%
-  dplyr::select(-V1) %>%
-  gather(key = "Teile",value = "Teile_ID",-ID_K1BE1) 
-  #filter(str_detect(Teile_ID, "T4")) %>%
-  #dplyr::select(-Teile) 
+driver <- total_vehicles%>%
+  filter(str_detect(ID_Motor,"K1DI2-103-1031-21")) %>%
+  right_join(registration, by= c("ID_Fahrzeug"="IDNummer"))

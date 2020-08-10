@@ -26,25 +26,29 @@ install_load("stringr", "data.table", "tidyverse","plotly","fitdistrplus")
 ### Preparation of the data for the exercise:
 1.Import of the datasets: Komponente_K7.csv, Logistics_delay_K7.csv
 
+we noticed that the number in the column "werksnummer" is not matching the corresping number in the ID for 122. But since this is irrevelavnt for the further analysis, the dataset error was not corrected.
+
 ```{r, results='markup'}
-Production_K7 <- fread(file="Data/Data/Logistikverzug/Komponente_K7.csv")
+Production_K7 <- fread(file="Data/Data/Logistikverzug/Komponente_K7.csv") %>%
+  as_tibble() %>%
+  mutate(production_date=as.Date(Produktionsdatum))
 head(Production_K7)
 
-Delivery_K7 <- fread(file="Data/Data/Logistikverzug/Logistics_delay_K7.csv")
+Delivery_K7 <- fread(file="Data/Data/Logistikverzug/Logistics_delay_K7.csv") %>%
+  as_tibble() %>%
+  mutate(good_arrrival=as.Date(Wareneingang))
 head(Delivery_K7)
 ```
 
 2. Filter for relevant columns for the analysis
 
 ```{r}
-Production_K7 <-Production_K7[,c("IDNummer","Produktionsdatum")]
+Production_K7 <-Production_K7[,c("IDNummer","production_date")]
 head(Production_K7)
 
-Delivery_K7 <-Delivery_K7[,c("IDNummer","Wareneingang")]
+Delivery_K7 <-Delivery_K7[,c("IDNummer","good_arrrival")]
 head(Delivery_K7)
 ```
-
-
 
 
 3.Join both datasets by ID number
@@ -59,7 +63,7 @@ head(Prod_Deli_join)
 
 ```{r,results='markup'}
 #calculate difference between delivery and produciton
-difference <- as.numeric(difftime(Prod_Deli_join$Wareneingang, Prod_Deli_join$Produktionsdatum, units = "days"))
+difference <- as.numeric(difftime(Prod_Deli_join$good_arrrival, Prod_Deli_join$production_date, units = "days"))
 
 # add difference colomn to joined dataset 
 Logistics_delay <- Prod_Deli_join %>%
@@ -88,7 +92,7 @@ In this plot it can be observed that lognormal, gamma and weibull seem to be goo
 ```{r,results='markup'}
 #discrete True or False
 #gain overview with cullen and frey graph
-descdist(difference, discrete = F)
+descdist(difference, discrete = T)
 ```
 
 Resulting from this selection of distrubtion candidates we fit the dataset to these three distrubtions by the fitdist() function. Addiontionly to gain a bigger knowledge we plot 
@@ -146,15 +150,42 @@ Trust: Relational database models are mature and well-understood.
 
 ### 3.*How many of the parts T4 ended up in vehicles registered in the city of Dortmund?*
 
-To determine the parts we first read 
+Our first step in this exercise is to create a iterable list of the 
 ```{r, results='markup'}
-#read in files
-T04 <- fread(file="Data/Data/Einzelteil/Einzelteil_T04.csv")
-registration <-fread(file="Data/Data/Zulassungen/Zulassungen_alle_Fahrzeuge.csv",header=TRUE)
-head(T04)
-head(registration)
-
+#create list of file correspoding to the parts for the compoments
+komponente_teil <- list.files("Data/Data/Komponente", full.names = T, pattern = "Bestandteile")
+head(komponente_teil)
 ```
+next we define a function which first reads in the in the first step found relevant files. Then the function checks with a if ..., if at least on column names of the dataframe contains a "T4" at the end. This to determine whether the part 4,which has the column name "ID_T4" is used for this compoments or not. if this if check is true only the columns for the ID of T4 and the correspoing are selected 
+
+```{r, results='markup'}
+#create function to find the compoments which use part 4
+task_3_1 <- function(x){
+  df <- fread(file = x, header = T) #read file 
+  if (any(str_detect(colnames(df),"T4$")==TRUE)){
+    df %>%
+      dplyr::select(ID_T4, contains("K")) # contains k 
+  }
+}
+```
+
+next the function is called with the lapply to do the same for all files found in the first and then bin
+
+
+
+```{r, results='markup'}
+#create function to find the compoments which use part 4
+b <- bind_rows(lapply(komponente_teil,task_3_1))
+head(b)
+```
+
+
+in the results we can see that only for compoments K1BE1 the part 4 is used, because this the only column apart from ID_T4
+
+
+To find the ID of the vehicles we know from the shortcuts table by the chair that only OEM 1 is using the compoment K1BE1 as their engine. 
+
+
 
 
 ### 4.*Which data types do the attributes of the registration table "Zulassungen_aller_Fahrzeuge" have? Put your answers into a table which is integrated into your Markdown document*
@@ -168,7 +199,7 @@ The data types of the attributes can be determined by calling the str() function
 
 ```{r, results='markup'}
 
-print(str(registration))
+#print(str(registration))
 ```
 
 
