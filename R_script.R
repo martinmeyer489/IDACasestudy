@@ -107,25 +107,25 @@ zulassungen <- zulassungen %>%
 #what about the parts which are already labelled as "fehlerhaft"?
 
 #create dataset of T2 that only contains the defected parts. changed dates from 31 to 30 because april and november both only have 30 days.
-t02_defected <- t02 %>%
+t02_affected <- t02 %>%
   filter((Herstellernummer == 202 & Werksnummer == 2022 & Produktionsdatum >= "2009-04-30" & Produktionsdatum <= "2014-11-30") | (Herstellernummer == 201 & Werksnummer == 2011 & ID_number >= 1250 & ID_number <= 19500))
 
-#join defected parts with components:
-t02_defected_components <- t02_defected %>%
+#join affected parts with components:
+t02_affected_components <- t02_affected %>%
   select(ID_T02) %>%
   left_join(bestand_k1be1,by=c("ID_T02" = "ID_T2")) %>%
   left_join(bestand_k1be2,by=c("ID_T02" = "ID_T2")) %>%
   left_join(bestand_k1di1,by=c("ID_T02" = "ID_T2")) %>%
   left_join(bestand_k1di2,by=c("ID_T02" = "ID_T2"))
 
-t02_defected_components <- t02_defected_components %>%
+t02_affected_components <- t02_affected_components %>%
   unite("ID_Component", ID_K1BE1, ID_K1BE2, ID_K1DI1, ID_K1DI2, na.rm = TRUE)
 
 bestand_fzg_oem1_typ11[c(1:3)] <- list(NULL)
 bestand_fzg_oem1_typ12[c(1:3)] <- list(NULL)
 
 #join affected vehicles, unite ID_columns from Type11 and Type 12 and change format to factors to see if every part is in one component and every component in one vehicle:
-t02_defected_vehicles <- t02_defected_components %>%
+t02_affected_vehicles <- t02_affected_components %>%
   left_join(bestand_fzg_oem1_typ11,by=c("ID_Component" = "ID_Motor")) %>%
   left_join(bestand_fzg_oem1_typ12,by=c("ID_Component" = "ID_Motor")) %>%
   unite("ID_Vehicle", ID_Fahrzeug.x, ID_Fahrzeug.y, na.rm = TRUE) %>%
@@ -133,21 +133,21 @@ t02_defected_vehicles <- t02_defected_components %>%
   mutate(ID_Component = as.factor(ID_Component)) %>%
   mutate(ID_Vehicle = as.factor(ID_Vehicle))
 
-summary(t02_defected_vehicles)
+summary(t02_affected_vehicles)
 #summary shows that 405621 components could not be found in any vehicle of type 11 or type 12. why?? >> k1be2 and k1di2 are not in vehicles from OEM1, only OEM2!
 
 #the following filter shows that all components with 1 at the end were found in a vehicle.
-t02_defected_vehicles %>%
+t02_affected_vehicles %>%
   filter(str_detect(ID_Component, "K1BE1|K1DI1")) %>%
   summary()
 
-t02_defected_zulassungen <- t02_defected_vehicles %>%
+t02_affected_zulassungen <- t02_affected_vehicles %>%
   left_join(zulassungen, by = c("ID_Vehicle" = "IDNummer")) %>%
   mutate(ID_Vehicle = if_else(ID_Vehicle == "",NA_character_ ,ID_Vehicle)) %>%
   mutate(ID_Vehicle = as.factor(ID_Vehicle))
 
 #the following filter shows that each vehicle was connected to a gemeinde-
-t02_defected_zulassungen %>%
+t02_affected_zulassungen %>%
   filter(!is.na(ID_Vehicle) & is.na(Gemeinden))
 
 
