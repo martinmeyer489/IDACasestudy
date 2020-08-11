@@ -103,6 +103,7 @@ registration <-fread(file="Data/Data/Zulassungen/Zulassungen_alle_Fahrzeuge.csv"
 
 head(registration)
 
+
 vehicles_dortmund <- registration %>%
   filter(str_detect(Gemeinden,"DORTMUND")) %>%
   semi_join(vehicles, by=c("IDNummer"="ID_Fahrzeug"))

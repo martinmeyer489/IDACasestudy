@@ -26,41 +26,53 @@ install_load("stringr", "data.table", "tidyverse","plotly","fitdistrplus")
 ### Preparation of the data for the exercise:
 1.Import of the datasets: Komponente_K7.csv, Logistics_delay_K7.csv
 
-we noticed that the number in the column "werksnummer" is not matching the corresping number in the ID for 122. But since this is irrevelavnt for the further analysis, the dataset error was not corrected.
+The head () function is used to explore the imported datasets. When exploring the dataset, we noticed that the values in the column "Herstellernummer" are not matching the corresponding number in the ID for 112 in the dataset "Delivery_K7". But since this is irrevelavnt for the further analysis, the dataset error was not corrected.
+
+Why irrelevant?? or both datasets??
+
+
+ 
 
 ```{r, results='markup'}
 Production_K7 <- fread(file="Data/Data/Logistikverzug/Komponente_K7.csv") %>%
   as_tibble() %>%
-  mutate(production_date=as.Date(Produktionsdatum))
+  mutate(Produktionsdatum=as.Date(Produktionsdatum))%>%
+  rename(production_date=Produktionsdatum) %>%
+  rename(IDNumber=IDNummer)
 head(Production_K7)
 
 Delivery_K7 <- fread(file="Data/Data/Logistikverzug/Logistics_delay_K7.csv") %>%
   as_tibble() %>%
-  mutate(good_arrrival=as.Date(Wareneingang))
+  mutate(Wareneingang=as.Date(Wareneingang)) %>%
+  rename(good_arrrival=Wareneingang) %>%
+  rename(IDNumber=IDNummer)
 head(Delivery_K7)
 ```
 
 2. Filter for relevant columns for the analysis
 
 ```{r}
-Production_K7 <-Production_K7[,c("IDNummer","production_date")]
-head(Production_K7)
+Production_K7 <-Production_K7[,c("IDNumber","production_date")]
 
-Delivery_K7 <-Delivery_K7[,c("IDNummer","good_arrrival")]
-head(Delivery_K7)
+Delivery_K7 <-Delivery_K7[,c("IDNumber","good_arrrival")]
+
 ```
 
 
 3.Join both datasets by ID number
 
+
+we join the two datasets by a left join by the column "IDNumber, because we only want to add the row Wareneingang to the matching IDNumber. Afterwards we again inspect the new Dataframe with the head function to check if the join worked fine.
+
 ```{r,results='markup'}
 Prod_Deli_join <- Production_K7 %>%
-  left_join(Delivery_K7,by="IDNummer")
+  left_join(Delivery_K7,by="IDNumber")
 head(Prod_Deli_join)
 ```
 
 4. Add another colomn with difference between delivery and production date
 
+First we calculate a vector "difference" with the difftime() function, which creates time intervals between the columns good_arrival and production_date in days. Then this vector is added with the mutate call to the joined dataframe and saved as the final dataset: Logistics_delay
 ```{r,results='markup'}
 #calculate difference between delivery and produciton
 difference <- as.numeric(difftime(Prod_Deli_join$good_arrrival, Prod_Deli_join$production_date, units = "days"))
@@ -73,55 +85,56 @@ head(Logistics_delay)
 
 
 
-### 1.a)*How is the logistics delay distributed? Proof your selection by statistical tests and briefly describe your approach.*
 
+### 1.a)*How is the logistics delay distributed? Proof your selection by statistical tests and briefly describe your approach.*
 To determine the distrubtion of the logistics delay it is necessary to fit one or more distributions to the data set and then evaluate the goodness of fit of these distributions.
 So first, to find good distrubtion candidates for the fitting to the data set it is a good idea to observe the emperical distrubtion with different plots. Therefore the plotdist() function from the package fitdistr is used, which provides two plots
-(see Figure 1): the left plot is the histogram on a density scale and the right-hand plot the empirical cumulative distribution function (CDF)
+(see Figure 1): the left plot is the histogram on a density scale and the right plot the empirical cumulative distribution function (CDF)
 
 ```{r,results='markup'}
 #
-plotdist(difference, histo = T, demp = F)
+plotdist(difference, histo = T, demp = T)
 
 ```
 
-Another good indicator to choose the distrubtion candidates is the cullen and frey grap also called pearson graph by calling the function descdist from the packacge fitdistr. This graph gives a first impression wich distrubtions could fit the data of the logicitcs delay good. 
-In this plot it can be observed that lognormal, gamma and weibull seem to be good candidates because the blue observation point is near to their points or lines in the graph
+Another good indicator to choose the distrubtion candidates is the cullen and frey grap also called pearson graph by calling the function descdist from the package fitdistrplus. This graph gives a first impression which distrubtions could fit the data of the logicitcs delay good. 
+In this plot it can be observed that Normal, Negativ Binomial and Poission seem to be good candidates because the blue observation point is near to their points or lines in the graph
 
 
 ```{r,results='markup'}
-#discrete True or False
 #gain overview with cullen and frey graph
 descdist(difference, discrete = T)
 ```
 
-Resulting from this selection of distrubtion candidates we fit the dataset to these three distrubtions by the fitdist() function. Addiontionly to gain a bigger knowledge we plot 
+Resulting from this selection of distrubtion candidates we fit the dataset to these three distrubtions by the fitdist() function. Additionally to gain a bigger knowledge we plot ..
+
+From the plot we can already see that the normal seems to fit the logistics delay the best.
+
+
 ```{r,results='markup'}
-
-
 #fit different distrubtions to the data 
-fit_w  <- fitdist(difference, "weibull")
-fit_g  <- fitdist(difference, "gamma")
-fit_ln <- fitdist(difference, "lnorm")
-
+fit_nb  <- fitdist(difference, "nbinom")
+fit_n  <- fitdist(difference, "norm")
+fit_p <- fitdist(difference, "pois")
 
 #plot distrubtions
 par(mfrow = c(2, 2))
-plot.legend <- c("Weibull", "lognormal", "gamma")
+plot.legend <- c("N-Binomial", "Normal", "Poisson")
 
-denscomp(list(fit_w, fit_ln, fit_g), legendtext = plot.legend)
-qqcomp(list(fit_w, fit_ln, fit_g), legendtext = plot.legend)
-cdfcomp(list(fit_w, fit_ln, fit_g), legendtext = plot.legend)
-ppcomp(list(fit_w, fit_ln, fit_g), legendtext = plot.legend)
-
+denscomp(list(fit_nb, fit_n, fit_p), legendtext = plot.legend)
+qqcomp(list(fit_nb, fit_n, fit_p), legendtext = plot.legend)
+cdfcomp(list(fit_nb, fit_n, fit_p), legendtext = plot.legend)
+ppcomp(list(fit_nb, fit_n, fit_p), legendtext = plot.legend)
 ```
 
 
-added to our visual analysis we calcuate the goodness of fit by calling the function gofstat(), which provides us with ...
+Added to our visual impression we calcuate the goodness of fit by calling the function gofstat(), which provides us with .... From the statitics we can see that the normal distrubtion provides the best fit to the data set.
+
 ```{r,results='markup'}
-#calcuate goodness of fit of the four distrubutions
-gofstat(list(fit_w, fit_g, fit_ln))
+#calcuate goodness of fit of the three distrubutions
+gofstat(list(fit_nb, fit_n, fit_p))
 ```
+
 
 ### 1.b)*What is the minimum/maximum time between delivering and receiving goods?*
 
@@ -131,15 +144,33 @@ We determine the mean and min and max of the logistics delay by using the functi
 
 ```{r, results='markup'}
 #determine  mean, max and min of logistics delay
-print(summary(Logistics_delay$difference))
+summary(Logistics_delay$difference)
 ```
 
 ### 1.d)*Visualize the distribution in an appropriate way by displaying a histogram and the density function using the package plotly.*
 
 ```{r, results='markup'}
-fig <- plot_ly(x=Logistics_delay$difference, type = "histogram", histnorm = "probability")
+hist1 <- plot_ly(x=Logistics_delay$difference, type = "histogram", histnorm = "probability")
+hist1
+
+p <- ggplot(Logistics_delay, aes(difference)) + 
+  geom_histogram(aes(y = ..density..), alpha = 0.7, fill = "#333333") + 
+  geom_density(fill = "#ff4d4d", alpha = 0.5) + 
+  theme(panel.background = element_rect(fill = '#ffffff')) + 
+  ggtitle("Density with Histogram overlay")
+
+fig <- ggplotly(p)
+
 fig
+#create a ggplot qq graph
+qq_plot <- ggplot(Logistics_delay, aes(sample=difference)) +
+  geom_qq()
+
+#convert qq_plot in plotly format
+ggplotly(qq_plot)
 ```
+
+
 
 ### 2.*Why does it make sense to store the available data in separate files instead of saving everything in a huge table? Name at least four benefits. The available tables represent a typical data base structure. How is it called?*
 
@@ -150,13 +181,14 @@ Trust: Relational database models are mature and well-understood.
 
 ### 3.*How many of the parts T4 ended up in vehicles registered in the city of Dortmund?*
 
-Our first step in this exercise is to create a iterable list of the 
+Our first step in this exercise is to create a iterable list of the paths to the files which contains a "Bestandteile" in the name. So we have the tables for each component, which parts are used. 
 ```{r, results='markup'}
-#create list of file correspoding to the parts for the compoments
-komponente_teil <- list.files("Data/Data/Komponente", full.names = T, pattern = "Bestandteile")
-head(komponente_teil)
+#create list of file correspoding to the parts for the components
+components_parts <- list.files("Data/Data/Komponente", full.names = T, pattern = "Bestandteile")
+head(components_parts)
 ```
-next we define a function which first reads in the in the first step found relevant files. Then the function checks with a if ..., if at least on column names of the dataframe contains a "T4" at the end. This to determine whether the part 4,which has the column name "ID_T4" is used for this compoments or not. if this if check is true only the columns for the ID of T4 and the correspoing are selected 
+
+Next we define a function which first reads in the in the first step found relevant files. Then the function checks with a if ..., if at least on column names of the dataframe contains a "T4" at the end. This to determine whether the part 4,which has the column name "ID_T4" is used for this compoments or not. if this if check is true only the columns for the ID of T4 and the correspoing are selected 
 
 ```{r, results='markup'}
 #create function to find the compoments which use part 4
@@ -171,22 +203,66 @@ task_3_1 <- function(x){
 
 next the function is called with the lapply to do the same for all files found in the first and then bin
 
-
-
 ```{r, results='markup'}
 #create function to find the compoments which use part 4
-b <- bind_rows(lapply(komponente_teil,task_3_1))
-head(b)
+components_part4 <- bind_rows(lapply(components_parts,task_3_1))
+head(components_part4)
 ```
 
-
-in the results we can see that only for compoments K1BE1 the part 4 is used, because this the only column apart from ID_T4
+In the results we can see that only for compoments K1BE1 the part 4 is used, because this the only column apart from ID_T4
 
 
 To find the ID of the vehicles we know from the shortcuts table by the chair that only OEM 1 is using the compoment K1BE1 as their engine. 
 
 
+So the two files corresponding to the Compments for vehciles by OEM 1 are read in and the rows in column "ID_Motor" which start with K1BE1 are filtered and only the two relevant colonm ID_Motor and ID Fahrzeug are selected
 
+```{r, results='markup'}
+
+#read in files 
+OEM1_11 <- fread(file = "Data/Data/Fahrzeug/Bestandteile_Fahrzeuge_OEM1_Typ11.csv",header= T) %>%
+    as_tibble() %>%
+    filter(str_detect(ID_Motor,"^K1BE1")) %>%
+    dplyr::select(ID_Motor,ID_Fahrzeug) %>%
+    rename(ID_Engine=ID_Motor) %>%
+    rename(ID_Vehicle=ID_Fahrzeug)
+
+
+OEM1_12 <- fread(file = "Data/Data/Fahrzeug/Bestandteile_Fahrzeuge_OEM1_Typ12.csv",header= T) %>%
+  as_tibble() %>%
+  filter(str_detect(ID_Motor,"^K1BE1")) %>%
+  dplyr::select(ID_Motor,ID_Fahrzeug) %>%
+  rename(ID_Engine=ID_Motor) %>%
+  rename(ID_Vehicle=ID_Fahrzeug)
+
+vehicles <- bind_rows(OEM1_11,OEM1_12) 
+head(vehicles)
+```
+
+Next the registration table is read in and tidied.
+
+```{r, results='markup'}
+#read in 
+registration <-fread(file="Data/Data/Zulassungen/Zulassungen_alle_Fahrzeuge.csv",header = T) %>%
+    as_tibble() %>%
+    mutate(Zulassung = as.Date(Zulassung)) %>%
+    rename(registration_date=Zulassung) %>%
+    rename(IDNumber=IDNummer)%>%
+    rename(municipalities=Gemeinden)
+
+head(registration)
+```
+
+To find the vehciles which are registered in Dortmund the registration dataset is filtered and semi joined with the vehciles dataset to find only the matching . Finally the nrow() function gives us the answer that 19609 part 4 ended up in vehciles  regirrested in Dortmung.
+
+```{r, results='markup'}
+vehicles_dortmund <- registration %>%
+  filter(str_detect(municipalities,"DORTMUND")) %>%
+  semi_join(vehicles, by=c("IDNumber"="ID_Vehicle"))
+    
+head(vehicles_dortmund)
+nrow(vehicles_dortmund)
+```
 
 ### 4.*Which data types do the attributes of the registration table "Zulassungen_aller_Fahrzeuge" have? Put your answers into a table which is integrated into your Markdown document*
 
@@ -195,11 +271,10 @@ The data types of the attributes can be determined by calling the str() function
 1. V1 is integer
 2. IDNummer is character
 3. Gemeinde is character
-4. Zulassung is character
+4. Zulassung is Date
 
 ```{r, results='markup'}
-
-#print(str(registration))
+print(str(registration))
 ```
 
 
@@ -208,4 +283,18 @@ The data types of the attributes can be determined by calling the str() function
 It makes sense to store the data sets, which are used for the application, in a database on a server, because this makes it possible for other users to access the data sets and thus use the application properly.
 
 ### 6. *On 11 August 2019 there was an accident involving a stolen car produced by your company. The driver left the scene without a trace. The license plate of the car, which caused the accident, was faked and the Vehicle Identification Number (VIN) was removed. Since you work for the Federal Motor Transport Authority, the police asks for your help to find out where the vehicle with the engine code "K1DI2-103-1031-21" (corresponds to the engine ID number) was registered.*
+
+```{r, results='markup'}
+OEM2_21 <- fread(file = "Data/Data/Fahrzeug/Bestandteile_Fahrzeuge_OEM2_Typ21.csv",header= T) %>%
+  as_tibble()
+
+OEM2_22 <- fread(file = "Data/Data/Fahrzeug/Bestandteile_Fahrzeuge_OEM2_Typ22.csv",header= T) %>%
+  as_tibble()
+
+total_vehicles <- bind_rows(OEM2_21,OEM2_22)
+
+driver <- total_vehicles%>%
+  filter(str_detect(ID_Motor,"K1DI2-103-1031-21")) %>%
+  right_join(registration, by= c("ID_Fahrzeug"="IDNummer"))
+```
 
