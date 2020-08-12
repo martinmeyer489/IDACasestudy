@@ -6,32 +6,36 @@ library('install.load')
 install_load("stringr", "data.table", "tidyverse","plotly", "fitdistrplus", "tidyr")
 
 
-#fread erlaubt??
-Production_K7 <- fread(file="Data/Data/Logistikverzug/Komponente_K7.csv")
+#read in files
+Production_K7 <- fread(file="Data/Data/Logistikverzug/Komponente_K7.csv") %>%
+  as_tibble() %>%
+  mutate(Produktionsdatum=as.Date(Produktionsdatum))%>%
+  rename(production_date=Produktionsdatum) %>%
+  rename(IDNumber=IDNummer)
 head(Production_K7)
 
-Delivery_K7 <- fread(file="Data/Data/Logistikverzug/Logistics_delay_K7.csv")
+Delivery_K7 <- fread(file="Data/Data/Logistikverzug/Logistics_delay_K7.csv") %>%
+  as_tibble() %>%
+  mutate(Wareneingang=as.Date(Wareneingang)) %>%
+  rename(good_arrrival=Wareneingang) %>%
+  rename(IDNumber=IDNummer)
 head(Delivery_K7)
 
 
 
 #Filter for relevant columns for the analysis
-#Q: V1 relevant ??
-Production_K7 <- Production_K7[,c("IDNummer","Produktionsdatum")]
-head(Production_K7)
+Production_K7 <-Production_K7[,c("IDNumber","production_date")]
 
-Delivery_K7 <- Delivery_K7[,c("IDNummer","Wareneingang")]
-head(Delivery_K7)
+Delivery_K7 <-Delivery_K7[,c("IDNumber","good_arrrival")]
 
 #join both datasets
 Prod_Deli_join <- Production_K7 %>%
-  left_join(Delivery_K7,by="IDNummer")
+  left_join(Delivery_K7,by="IDNumber")
 head(Prod_Deli_join)
 
 
 #calculate difference between delivery and produciton
-#Q:You can assume that the produced goods are issued one day after production date.
-difference <- as.numeric(difftime(Prod_Deli_join$Wareneingang, Prod_Deli_join$Produktionsdatum, units = "days"))
+difference <- as.numeric(difftime(Prod_Deli_join$good_arrrival, Prod_Deli_join$production_date, units = "days"))
 
 # add difference colomn to joined dataset 
 Logistics_delay <- Prod_Deli_join %>%
@@ -39,10 +43,10 @@ Logistics_delay <- Prod_Deli_join %>%
 head(Logistics_delay)
 
 #plot emperical distrubtion
-plotdist(difference, histo = TRUE, demp = F)
+plotdist(difference, histo = TRUE, demp = T)
 
 #gain overview with cullen and frey graph
-descdist(difference, discrete = FALSE)
+descdist(difference, discrete = T)
 
 #fit different distrubtions to the data 
 fit_w  <- fitdist(difference, "weibull")
@@ -71,43 +75,57 @@ print(summary(Logistics_delay$difference))
 
 
 #task 3
-fahrzeug_komponente <- list.files("Data/Data/Fahrzeug", full.names = T, pattern = "Bestandteile")
-komponente_teil <- list.files("Data/Data/Komponente", full.names = T, pattern = "Bestandteile")
+#create list of file correspoding to the parts for the components
+components_parts <- list.files("Data/Data/Komponente", full.names = T, pattern = "Bestandteile")
+head(components_parts)
 
-
-task_3_2 <- function(x){
-  df <- fread(file = x, header = T) #%>%
+#create function to find the compoments which use part 4
+task_3_1 <- function(x){
+  df <- fread(file = x, header = T) #read file 
   if (any(str_detect(colnames(df),"T4$")==TRUE)){
     df %>%
       dplyr::select(ID_T4, contains("K")) # contains k 
   }
 }
 
-b <- bind_rows(lapply(komponente_teil,task_3_2))
+b <- bind_rows(lapply(components_parts,task_3_1))
   
+#read in files 
 OEM1_11 <- fread(file = "Data/Data/Fahrzeug/Bestandteile_Fahrzeuge_OEM1_Typ11.csv",header= T) %>%
-    as_tibble() %>%
-    filter(str_detect(ID_Motor,"^K1BE1")) %>%
-    dplyr::select(ID_Motor,ID_Fahrzeug)
+  as_tibble() %>%
+  filter(str_detect(ID_Motor,"^K1BE1")) %>%
+  dplyr::select(ID_Motor,ID_Fahrzeug) %>%
+  rename(ID_Engine=ID_Motor) %>%
+  rename(ID_Vehicle=ID_Fahrzeug)
+
 
 OEM1_12 <- fread(file = "Data/Data/Fahrzeug/Bestandteile_Fahrzeuge_OEM1_Typ12.csv",header= T) %>%
   as_tibble() %>%
   filter(str_detect(ID_Motor,"^K1BE1")) %>%
-  dplyr::select(ID_Motor,ID_Fahrzeug)
+  dplyr::select(ID_Motor,ID_Fahrzeug) %>%
+  rename(ID_Engine=ID_Motor) %>%
+  rename(ID_Vehicle=ID_Fahrzeug)
+
+
 
 vehicles <- bind_rows(OEM1_11,OEM1_12)  
 
+#read in 
 registration <-fread(file="Data/Data/Zulassungen/Zulassungen_alle_Fahrzeuge.csv",header = T) %>%
-    as_tibble() %>%
-    mutate(Zulassung = as.Date(Zulassung))
+  as_tibble() %>%
+  mutate(Zulassung = as.Date(Zulassung)) %>%
+  rename(registration_date=Zulassung) %>%
+  rename(IDNumber=IDNummer)%>%
+  rename(municipalities=Gemeinden)
 
 head(registration)
 
 
 vehicles_dortmund <- registration %>%
-  filter(str_detect(Gemeinden,"DORTMUND")) %>%
-  semi_join(vehicles, by=c("IDNummer"="ID_Fahrzeug"))
-    
+  filter(str_detect(municipalities,"DORTMUND")) %>%
+  semi_join(vehicles, by=c("IDNumber"="ID_Vehicle"))
+
+head(vehicles_dortmund)
 nrow(vehicles_dortmund)
 
 
@@ -115,14 +133,21 @@ nrow(vehicles_dortmund)
 
 #task 6
 
+#read compoments table for OEM 2 type 21
 OEM2_21 <- fread(file = "Data/Data/Fahrzeug/Bestandteile_Fahrzeuge_OEM2_Typ21.csv",header= T) %>%
   as_tibble()
 
+#read compoments table for OEM 2 type 212
 OEM2_22 <- fread(file = "Data/Data/Fahrzeug/Bestandteile_Fahrzeuge_OEM2_Typ22.csv",header= T) %>%
   as_tibble()
 
-total_vehicles <- bind_rows(OEM2_21,OEM2_22)
+#bind the rows of the files together
+total_vehicles <- bind_rows(OEM2_21,OEM2_22) %>%
+  rename(ID_Engine=ID_Motor) %>%
+  rename(ID_Vehicle=ID_Fahrzeug)
 
+
+#find vehicle with Engine ID
 driver <- total_vehicles%>%
-  filter(str_detect(ID_Motor,"K1DI2-103-1031-21")) %>%
-  right_join(registration, by= c("ID_Fahrzeug"="IDNummer"))
+  filter(str_detect(ID_Engine,"K1DI2-103-1031-21")) %>%
+  right_join(registration, by= c("ID_Vehicle"="IDNumber"))

@@ -284,17 +284,28 @@ It makes sense to store the data sets, which are used for the application, in a 
 
 ### 6. *On 11 August 2019 there was an accident involving a stolen car produced by your company. The driver left the scene without a trace. The license plate of the car, which caused the accident, was faked and the Vehicle Identification Number (VIN) was removed. Since you work for the Federal Motor Transport Authority, the police asks for your help to find out where the vehicle with the engine code "K1DI2-103-1031-21" (corresponds to the engine ID number) was registered.*
 
+Through the shortcuts table by the chair we know that the beginning K1DI2 of the Engine ID belongs to OEM 2. Therefor we only read in the two compoments table for the two types of OEM 2. Next we combine the two tables by the function bindrows().
+
 ```{r, results='markup'}
+#read compoments table for OEM 2 type 21
 OEM2_21 <- fread(file = "Data/Data/Fahrzeug/Bestandteile_Fahrzeuge_OEM2_Typ21.csv",header= T) %>%
   as_tibble()
 
+#read compoments table for OEM 2 type 212
 OEM2_22 <- fread(file = "Data/Data/Fahrzeug/Bestandteile_Fahrzeuge_OEM2_Typ22.csv",header= T) %>%
   as_tibble()
 
-total_vehicles <- bind_rows(OEM2_21,OEM2_22)
+#bind the rows of the files together
+total_vehicles <- bind_rows(OEM2_21,OEM2_22) %>%
+  rename(ID_Engine=ID_Motor) %>%
+  rename(ID_Vehicle=ID_Fahrzeug)
 
+
+#find vehicle with Engine ID
 driver <- total_vehicles%>%
-  filter(str_detect(ID_Motor,"K1DI2-103-1031-21")) %>%
-  right_join(registration, by= c("ID_Fahrzeug"="IDNummer"))
+  filter(str_detect(ID_Engine,"K1DI2-103-1031-21")) %>%
+  right_join(registration, by= c("ID_Vehicle"="IDNumber"))
+
+head(driver)
 ```
 
