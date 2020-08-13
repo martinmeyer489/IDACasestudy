@@ -121,10 +121,10 @@ fit_p <- fitdist(difference, "pois")
 par(mfrow = c(2, 2))
 plot.legend <- c("N-Binomial", "Normal", "Poisson")
 
-denscomp(list(fit_nb, fit_n, fit_p), legendtext = plot.legend)
-qqcomp(list(fit_nb, fit_n, fit_p), legendtext = plot.legend)
-cdfcomp(list(fit_nb, fit_n, fit_p), legendtext = plot.legend)
-ppcomp(list(fit_nb, fit_n, fit_p), legendtext = plot.legend)
+denscomp(list(fit_nb, fit_n, fit_p), legendtext = plot.legend,xlab="Logistics in days")
+qqcomp(list(fit_nb, fit_n, fit_p), legendtext = plot.legend,xlab="Logistics in days")
+cdfcomp(list(fit_nb, fit_n, fit_p), legendtext = plot.legend,xlab="Logistics in days")
+ppcomp(list(fit_nb, fit_n, fit_p), legendtext = plot.legend,xlab="Logistics in days")
 ```
 
 
