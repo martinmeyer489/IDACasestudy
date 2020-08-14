@@ -57,7 +57,7 @@ Delivery_K7 <-Delivery_K7[,c("IDNumber","good_arrrival")]
 
 3.Join both datasets by ID number
 
-We join the two datasets by a left join by the column "IDNumber, because we only want to add the row "good_arrival" to the matching IDNumber. Afterwards we again inspect the new Dataframe with the head function to check if the join worked.
+We join the two datasets by a left join by the column IDNumber, because we only want to add the column good_arrival to the matching IDNumber. Afterwards we again inspect the new dataframe with the head function to check if the join worked.
 
 ```{r,results='markup'}
 Prod_Deli_join <- Production_K7 %>%
@@ -80,20 +80,20 @@ head(Logistics_delay)
 
 ### 1.a)*How is the logistics delay distributed? Proof your selection by statistical tests and briefly describe your approach.*
 To determine the distrubtion of the logistics delay it is necessary to fit one or more distributions to the data set and then evaluate the goodness of fit of these distributions.
-So first, to find good distrubtion candidates for the fitting to the data set it is a good idea to observe the emperical distrubtion with different plots. Therefore the plotdist() function from the package fitdistrplus is used, which provides two plots: the left plot is the histogram on a density scale and the right plot the empirical cumulative distribution function (CDF)
+So first, to find good distrubtion candidates for the fitting to the data set it is a good idea to observe the empirical distrubtion with different plots. Therefore the plotdist() function from the package fitdistrplus is used, which provides two plots: the left plot is the histogram on a density scale and the right plot the empirical cumulative distribution function (CDF)
 
 ```{r,results='markup'}
 #plot histogram and cdf 
-plotdist(difference, histo = T, demp = T)
+plotdist(difference, histo = T, demp = F,discrete=T)
 
 ```
 
-Another good indicator to choose the distrubtion candidates is the cullen and frey grap also called pearson graph by calling the function descdist from the package fitdistrplus. This graph gives a first impression, which distrubtions could fit the data of the logicitcs delay good. 
-In this plot it can be observed that Normal, Negativ Binomial and Poission seem to be good candidates because the blue observation point is near to their points or lines in the graph.
+Another good indicator to choose the distrubtion candidates is the cullen and frey graph by calling the function descdist from the package fitdistrplus. This graph gives a first impression, which distrubtions could fit the data of the logistics delay good. 
+In this plot it can be observed that Normal, Negativ Binomial and Poisson seem to be good candidates because the blue observation point is near to their points or lines in the graph.
 
 ```{r,results='markup'}
 #gain overview with cullen and frey graph
-descdist(difference, discrete = T)
+descdist(difference, discrete = TRUE)
 ```
 
 Resulting from this selection of distrubtion candidates we fit the dataset to these three distrubtions by the fitdist() function. Additionally to gain a bigger knowledge we plot ..
@@ -111,10 +111,10 @@ fit_p <- fitdist(difference, "pois")
 par(mfrow = c(2, 2))
 plot.legend <- c("N-Binomial", "Normal", "Poisson")
 
-denscomp(list(fit_nb, fit_n, fit_p), legendtext = plot.legend,xlab="Logistics in days")
-qqcomp(list(fit_nb, fit_n, fit_p), legendtext = plot.legend,xlab="Logistics in days")
-cdfcomp(list(fit_nb, fit_n, fit_p), legendtext = plot.legend,xlab="Logistics in days")
-ppcomp(list(fit_nb, fit_n, fit_p), legendtext = plot.legend,xlab="Logistics in days")
+denscomp(list(fit_nb, fit_n, fit_p), legendtext = plot.legend,xlab="Logistics delay in days")
+qqcomp(list(fit_nb, fit_n, fit_p), legendtext = plot.legend,xlab="Logistics delay in days")
+cdfcomp(list(fit_nb, fit_n, fit_p), legendtext = plot.legend,xlab="Logistics delay in days")
+ppcomp(list(fit_nb, fit_n, fit_p), legendtext = plot.legend,xlab="Logistics delay in days")
 ```
 
 
@@ -123,6 +123,7 @@ Added to our visual impression we calcuate the goodness of fit by calling the fu
 ```{r,results='markup'}
 #calcuate goodness of fit of the three distrubutions
 gofstat(list(fit_nb, fit_n, fit_p))
+summary(fit_n)
 ```
 
 
@@ -130,7 +131,7 @@ gofstat(list(fit_nb, fit_n, fit_p))
 
 ### 1.c)*Determine the mean of the logistics delay.*
 
-We determine the mean and min and max of the logistics delay by using the function summary. In the Results we see that the mean is 10.08 days, the max is 18 days and the min is 7 days.
+We determine the mean and min and max of the logistics delay by using the function summary. In the results we see that the mean is 10.08 days, the max is 18 days and the min is 7 days.
 
 ```{r, results='markup'}
 #determine  mean, max and min of logistics delay
@@ -143,15 +144,16 @@ summary(Logistics_delay$difference)
 #hist1 <- plot_ly(x=Logistics_delay$difference, type = "histogram", histnorm = "probability")
 #hist1
 
-#p <- ggplot(Logistics_delay, aes(difference)) + 
-#  geom_histogram(aes(y = ..density..), alpha = 0.7, fill = #"#333333") + 
-#  geom_density(fill = "#ff4d4d", alpha = 0.5) + 
-#  theme(panel.background = element_rect(fill = '#ffffff')) + 
-#  ggtitle("Density with Histogram overlay")
+p <- ggplot(Logistics_delay, aes(difference)) + 
+  geom_histogram(aes(y = ..density..), alpha = 0.7, fill = "#333333") + 
+  geom_density(fill = "#ff4d4d", alpha = 0.5) + 
+  theme(panel.background = element_rect(fill = '#ffffff')) + 
+  ggtitle("Density with Histogram overlay")
 
-#fig <- ggplotly(p)
+fig <- ggplotly(p)
+fig
 
-#fig
+
 #create a ggplot qq graph
 #qq_plot <- ggplot(Logistics_delay, aes(sample=difference)) +
   #geom_qq()
@@ -165,7 +167,7 @@ summary(Logistics_delay$difference)
 ### 2.*Why does it make sense to store the available data in separate files instead of saving everything in a huge table? Name at least four benefits. The available tables represent a typical data base structure. How is it called?*
 
 
-This data base structure is called relational data base. The benefits from this structure, compared to one huge table is that the data is stored just once, which  eliminates data deduplication and therefor offers a higher accuracy. Furthermore the access is higher, because complex queries are easy for users to perform instead of navigating through a huge table. Another benefit is that relational databases are so flexible that your  can change the structure e.g. add table, rename relation and still keep the database running and queries happen. Last but not least, the tables of the relational database can be tagged as confidential or not. This segregation is easier implemented than with a huge table and therefor increases the security.
+This data base structure is called relational data base. The benefits from this structure, compared to one huge table is that the data is stored just once, which  eliminates data deduplication and therefor offers a higher accuracy. Furthermore the access is easier, because complex queries are easy for users to perform instead of navigating through a huge table. Another benefit is that relational databases are so flexible that you can change the structure e.g. add table, rename relation and still keep the database running and queries happen. Last but not least, the tables of the relational database can be tagged as confidential or not. This segregation is easier implemented than with a huge table and therefor increases the security.
 
 ### 3.*How many of the parts T4 ended up in vehicles registered in the city of Dortmund?*
 
@@ -181,7 +183,7 @@ Next we define a function which first reads in the in the first step found relev
 
 ```{r, results='markup'}
 #create function to find the components which use part 4
-task_3_1 <- function(x){
+task_3 <- function(x){
   df <- fread(file = x, header = T) #read file 
   if (any(str_detect(colnames(df),"T4$")==TRUE)){ #check if any column of the read dataframe has a name with T4 at the end 
     df %>%
@@ -190,21 +192,20 @@ task_3_1 <- function(x){
 }
 ```
 
-next the function is called with the lapply() function to do the same for all files found in the first step and then bind the rows together for all the tables created. So we have a table with a column for each component which has a part 4 in their parts list.
+next the function is called with the lapply() function to do the same for all files found in the first step and then bind the rows together for all the tables created. So we have a table with a column for each component, which has a part 4 in their parts list.
 
 ```{r, results='markup'}
 #apply function task_3_1 to all components list and bind rows together
-components_part4 <- bind_rows(lapply(components_parts,task_3_1))
+components_part4 <- bind_rows(lapply(components_parts,task_3))
 head(components_part4)
 ```
 
 In the results we can see that only for compoments K1BE1 the part 4 is used, because this the only column apart from ID_T4
 
-
 To find the ID of the vehicles we know from the shortcuts table by the chair that only OEM 1 is using the compoment K1BE1 as their engine. 
 
 
-So the two files corresponding to the Compments for vehciles by OEM 1 are read in and the rows in column "ID_Motor" which start with K1BE1 are filtered and only the two relevant colonm ID_Motor and ID Fahrzeug are selected
+So the two files corresponding to the components for vehicles by OEM 1 are read and the rows in column "ID_Motor" which start with K1BE1 are filtered and only the two relevant column ID_Motor and ID_Fahrzeug are selected
 
 ```{r, results='markup'}
 
@@ -279,13 +280,13 @@ print(str(registration))
 It makes sense to store the data sets, which are used for the application, in a database on a server, because this makes it possible for other users to access the data sets and thus use the application properly. Additionaly databases can handle very large datasets better than the personal computer. 
 Last but not least, databases are fault-tolerant. 
 
-It is not recommended to store the data sets on your personal computer, because, unlike data stored in a database, data stored on the personal computer does not have a built-in structure. This makes it espacially for large datasets hard to structure . Furthermore datasets store on the personal computer are fault tolerant which can create fatal damage to the functionality of the application.
+It is not recommended to store the data sets on your personal computer, because, unlike data stored in a database, data stored on the personal computer does not have a built-in structure. This makes it espacially for large datasets hard to structure. Furthermore datasets stored on the personal computer are not fault tolerant, which can create fatal damage to the functionality of the application.
 
 ...
 
 ### 6. *On 11 August 2019 there was an accident involving a stolen car produced by your company. The driver left the scene without a trace. The license plate of the car, which caused the accident, was faked and the Vehicle Identification Number (VIN) was removed. Since you work for the Federal Motor Transport Authority, the police asks for your help to find out where the vehicle with the engine code "K1DI2-103-1031-21" (corresponds to the engine ID number) was registered.*
 
-Through the shortcuts table by the chair we know that the beginning K1DI2 of the Engine ID belongs to OEM 2. Therefor we only read in the two compoments table for the two types of OEM 2. Next we combine the two tables by the function bindrows() and only select the relevant columns. Next the column "ID_Engine" of the data frame total_vehicles is filtered for the Engine ID "K1DI2-103-1031-21" and the registration data frame is joined by the Vehicle ID. This operation is then saved as driver. Since the final dataset contains 1111 rows and different registration muncipalities it is not possible to determine the vehicle, which caused the accident correctly. 
+Through the shortcuts table by the chair we know that the beginning K1DI2 of the Engine ID belongs to OEM 2. Therefor we only read in the two compoments table for the two types of OEM 2. Next we combine the two tables by the function bindrows() and only select the relevant columns. Next the column "ID_Engine" of the data frame total_vehicles is filtered for the Engine ID "K1DI2-103-1031-21" and the registration dataframe is joined by the Vehicle ID. This operation is then saved as driver. The vehicle involved in the accident was registered in Dahme/Mark on 2009-01-02 and has the ID number 22-2-21-19.
 
 ```{r, results='markup'}
 #read compoments table for OEM 2 type 21
@@ -304,7 +305,7 @@ total_vehicles <- bind_rows(OEM2_21,OEM2_22) %>%
 
 #find vehicle with Engine ID and join dataset with registration table by the Vehicle ID
 driver <- total_vehicles%>%
-  filter(str_detect(ID_Engine,"K1DI2-103-1031-21")) %>%
+  filter(ID_Engine =="K1DI2-103-1031-21") %>%
   left_join(registration, by= c("ID_Vehicle"="IDNumber"))
 
 head(driver)

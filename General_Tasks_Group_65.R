@@ -153,7 +153,7 @@ total_vehicles <- bind_rows(OEM2_21,OEM2_22) %>%
 
 #find vehicle with Engine ID and join dataset with registration table by the Vehicle ID
 driver <- total_vehicles%>%
-  filter(str_detect(ID_Engine,"K1DI2-103-1031-21")) %>%
+  filter(ID_Engine =="K1DI2-103-1031-21") %>%
   left_join(registration, by= c("ID_Vehicle"="IDNumber"))
 
 head(driver)
