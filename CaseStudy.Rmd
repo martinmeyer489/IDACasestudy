@@ -75,7 +75,7 @@ t02 <- t02 %>%
   unite("Fehlerhaft_Fahrleistung",Fehlerhaft_Fahrleistung.x,Fehlerhaft_Fahrleistung.y, na.rm = TRUE)
 ```
 
-After this, all variables are classfied as characters. In the next step we change them into the formats that fit to the data. This step has to be done on other data again, so a function was created to automate this process.
+After this, all variables are classfied as characters. In the next step we change them into the formats that fit to the data. This step has to be done on other data again, so a function is created to automate this process.
 
 ```{r,results='markup'}
 set_formats <- function(x){
@@ -128,7 +128,7 @@ k1di1 <- k1di1 %>%
   unite("Fehlerhaft_Fahrleistung",Fehlerhaft_Fahrleistung,Fehlerhaft_Fahrleistung.x,Fehlerhaft_Fahrleistung.y, na.rm = TRUE)
 ```
 
-The datasets K1BE1, K1BE2, and K1DI2 contain the columns "Produktionsdatum_Origin_01011970" and "origin" but they seem to be mixed up. In the following step this is corrected (*Produktionsdatum has still some mistakes in it (i.e. 0001 instead of 2001) but we dont need it anyway I think*)
+The datasets K1BE1, K1BE2, and K1DI2 contain the columns "Produktionsdatum_Origin_01011970" and "origin" but they seem to be mixed up. In the following step this is corrected (*Produktionsdatum has still some mistakes in it (i.e. 0001 instead of 2001) but we dont need it anyway I think.. shall we keep that step in the script, although we do not need the attributes?.. otherwise we would also have to correct a mistake in the Produktionsdatum column and change origin to factors.*)
 
 ```{r,results='markup'}
 k1be1 <- k1be1 %>% rename(Produktionsdatum=origin,Origin=Produktionsdatum_Origin_01011970)
@@ -213,20 +213,42 @@ t02_affected_vehicles <- t02_affected_components %>%
   left_join(bestand_fzg_oem1_typ12,by=c("ID_Component" = "ID_Motor"))
 ```
 
-Afterwards,the two variables of vehcile IDs can be united and the NA-values can be removed, because no row contains information in both ID columns.
+Afterwards,the two variables of vehcile IDs can be united and the NA-values can be removed, because no row contains information in both ID columns. *maybe show that*
 
 ```{r,results='markup'}
 t02_affected_vehicles <- t02_affected_vehicles %>%
   unite("ID_Vehicle", ID_Fahrzeug.x, ID_Fahrzeug.y, na.rm = TRUE)
 ```
 
-The IDs formats are changed into factors to check whether each part is assigned to one component and each component to one vehicle.
+Next, the "Fehlerhaft_Datum" must be added to the data frame because it is needed later to determine the time when vehicles were defective. This information can be found in fzg_oem1_typ11 and fzg_oem1_typ12. Before the join, we select the ID column and the Fehlerhaft_Date column of the vehicle data sets because all other varaibles are not necessary.
+
+```{r,results='markup'}
+fzg_oem1_typ11 <- fzg_oem1_typ11 %>% select(ID_Fahrzeug, Fehlerhaft_Datum)
+fzg_oem1_typ12 <- fzg_oem1_typ12 %>% select(ID_Fahrzeug, Fehlerhaft_Datum)
+
+t02_affected_vehicles <- t02_affected_vehicles %>%
+  left_join(fzg_oem1_typ11,by=c("ID_Vehicle" = "ID_Fahrzeug")) %>%
+  left_join(fzg_oem1_typ12,by=c("ID_Vehicle" = "ID_Fahrzeug"))
+```
+
+The information is in two variables now, one for cars of type 11 and one for cars of type 12. The information can be put together in one variable and the NA values must be removed.
 
 ```{r,results='markup'}
 t02_affected_vehicles <- t02_affected_vehicles %>%
+  unite("Fehlerhaft_Datum", Fehlerhaft_Datum.x, Fehlerhaft_Datum.y, na.rm = TRUE)
+```
+
+The IDs formats are changed into factors to be able to check whether each part is assigned to one component and each component to one vehicle. The "Fehlerhaft_Datum" is changed into a date format. Therefore, the the empty strings in "Fehlerhaft_Datum" must be replaced by NAs before the change of format.
+
+```{r,results='markup'}
+t02_affected_vehicles <- t02_affected_vehicles %>%
+  mutate(Fehlerhaft_Datum = if_else(Fehlerhaft_Datum == "",NA_character_ ,Fehlerhaft_Datum))
+
+t02_affected_vehicles <- t02_affected_vehicles %>%
   mutate(ID_T02 = as.factor(ID_T02)) %>%
   mutate(ID_Component = as.factor(ID_Component)) %>%
-  mutate(ID_Vehicle = as.factor(ID_Vehicle))
+  mutate(ID_Vehicle = as.factor(ID_Vehicle)) %>%
+  mutate(Fehlerhaft_Datum = as.Date(Fehlerhaft_Datum))
 ```
 
 Now, the summary of "to2_affected_vehicles" displays this information. It can be seen that all parts were assigned to one component but not all components were assigned to a vehicle.
@@ -247,20 +269,22 @@ The empty strings in the vehicle IDs can be replaced by NAs and transformed into
 
 ```{r,results='markup'}
 t02_affected_vehicles <- t02_affected_vehicles %>%
+  mutate(ID_Vehicle = as.character((ID_Vehicle)))%>%
   mutate(ID_Vehicle = if_else(ID_Vehicle == "",NA_character_ ,ID_Vehicle)) %>%
   mutate(ID_Vehicle = as.factor(ID_Vehicle))
 ```
 
-Now, the registration data of the vehicles is added by a left_join.
+Now, the registration data of the vehicles is added by a left_join and the ID_Vehicle is formatted to a factor again because the join chnaged it to character.
 
 ```{r,results='markup'}
 t02_affected_vehicles <- t02_affected_vehicles %>%
-  left_join(zulassungen, by = c("ID_Vehicle" = "IDNummer"))
+  left_join(zulassungen, by = c("ID_Vehicle" = "IDNummer")) %>%
+  mutate(ID_Vehicle = as.factor(ID_Vehicle))
 ```
 
-The following filter shows that each affected vehicle was assigned to a registration.
+The following filter shows that each affected vehicle was assigned succesfully to a registration.
 
 ```{r,results='markup'}
-t02_affected_zulassungen %>%
+t02_affected_vehicles %>%
   filter(!is.na(ID_Vehicle) & is.na(Gemeinden))
 ```
