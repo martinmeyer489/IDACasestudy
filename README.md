@@ -1,8 +1,8 @@
 # Data analysis and visualization with R
-* Cleaning and Joining of large data set 
+* Cleaning and joining of large data set 
 * Stastical analysis of logistics delay 
 
-## Example graphic of Statiscal analysis
+### Example graphic of Statiscal analysis
 <img src="r_stat.jpg">
 
 
