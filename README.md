@@ -2,10 +2,13 @@
 * Cleaning and Joining of large data set 
 * Stastical analysis of logistics delay 
 
-[<img src="r_stat.jpg">](https://github.com/martinmeyer489/Minibus_meyer)
+## Example graphic of Statiscal analysis
+<img src="r_stat.jpg">
 
 
 * creation of interactive Shiny app for user to query database
 
-[<img src="r_shiny.jpg">](https://github.com/martinmeyer489/Minibus_meyer)
+
+## Screenshot of shiny app 
+<img src="r_shiny.jpg">
 
