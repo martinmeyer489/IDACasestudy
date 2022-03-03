@@ -2,7 +2,7 @@
 * Cleaning and joining of large data set 
 * Stastical analysis of logistics delay 
 
-### Example graphic of Statiscal analysis
+### Example graphic of Stastical analysis
 <img src="r_stat.jpg" width="700">
 
 
