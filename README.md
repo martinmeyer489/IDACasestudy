@@ -1,3 +1,7 @@
-Universtiy Data Science Project
-by Christian Bilgic and Martin Meyer 
+# Data Analysis and visualization with R
+
+
+Data Science Projectby Christian Bilgic and Martin Meyer 
+
+
 
