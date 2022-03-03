@@ -3,12 +3,12 @@
 * Stastical analysis of logistics delay 
 
 ### Example graphic of Statiscal analysis
-<img src="r_stat.jpg">
+<img src="r_stat.jpg" width="500">
 
 
 * creation of interactive Shiny app for user to query database
 
 
 ## Screenshot of shiny app 
-<img src="r_shiny.jpg">
+<img src="r_shiny.jpg" width="500">
 
